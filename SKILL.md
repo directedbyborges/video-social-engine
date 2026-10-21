@@ -5,7 +5,7 @@ description: Edita vídeos verticais (9:16) para redes sociais e anúncios com m
 
 # Edição de vídeo vertical com motion (redes sociais e anúncios)
 
-O motor fica no repositório privado **`{{REPO}}`** (clonar, nunca reescrever o código do zero).
+O motor fica no repositório privado **`directedbyborges/video-social-engine`** (clonar, nunca reescrever o código do zero).
 A skill `motion-design` complementa esta: carregue-a quando for criar uma cena de motion nova (curvas, cortes de câmera, tempo de leitura).
 
 ## 0. Antes de editar: materiais (perguntar o que faltar)
@@ -20,9 +20,7 @@ Se o usuário disser para seguir sem algum item, siga e diga no fim o que ficou 
 
 ## 1. Setup (uma vez por sessão)
 
-```bash
-git clone https://github.com/{{REPO}} ~/vse && cd ~/vse && ./setup.sh
-```
+O repositório é privado: anexe-o à sessão com a ferramenta de adicionar repositório (owner `directedbyborges`, repo `video-social-engine`) e clone com o comando que ela devolver; depois `./setup.sh`. Se não houver acesso, peça ao usuário para conectar o GitHub. Nunca recrie o motor do zero.
 Python com `-I` ao processar arquivos baixados. Cada vídeo é uma pasta de projeto: `spec.py` + `transcript.json` + saídas.
 
 ## 2. Identidade visual primeiro (o mais importante)
