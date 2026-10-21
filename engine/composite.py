@@ -52,12 +52,15 @@ def transform(t):
     return fs + (1.0 - fs) * p, ftx * (1 - p), fty + (Z["split_ty"] - fty) * p, c
 
 # ---------- leitores ----------
-VF = grade.vf(TL["src"], TL["grade"])
+HAS_VIDEO = bool(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=index", "-of", "csv=p=0", TL["src"]], capture_output=True, text=True).stdout.strip())
+# vídeo narrado (src = só áudio da narração): o fundo é a cor da marca; o visual vem de painéis em tela cheia e b-roll
+VF = grade.vf(TL["src"], TL["grade"]) if HAS_VIDEO else None
 print("cor:", VF)
-dec = subprocess.Popen(["ffmpeg", "-v", "error", "-i", TL["src"]] + (["-vf", VF] if VF else []) + ["-f", "rawvideo", "-pix_fmt", "bgr24", "-"], stdout=subprocess.PIPE, bufsize=W * H * 3 * 4)
+dec = None if not HAS_VIDEO else subprocess.Popen(["ffmpeg", "-v", "error", "-i", TL["src"]] + (["-vf", VF] if VF else []) + ["-f", "rawvideo", "-pix_fmt", "bgr24", "-"], stdout=subprocess.PIPE, bufsize=W * H * 3 * 4)
 cur_idx, cur = -1, None
 def src_frame(idx):
     global cur_idx, cur
+    if dec is None: return np.full((H, W, 3), BG, np.uint8)
     while cur_idx < idx:
         buf = dec.stdout.read(W * H * 3)
         if len(buf) < W * H * 3: break
@@ -152,7 +155,8 @@ for k in range(int(round(t0 * FPS)), int(round(t1 * FPS))):
             frame = blend(frame, tr_cache[ti])
     frame = flash(frame, t)
     enc.stdin.write(np.ascontiguousarray(frame).tobytes())
-enc.stdin.close(); enc.wait(); dec.kill()
+enc.stdin.close(); enc.wait()
+if dec: dec.kill()
 
 # ---------- áudio ----------
 cat = json.load(open(ROOT + "/sfx/sfx.json"))

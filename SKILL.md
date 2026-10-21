@@ -1,6 +1,6 @@
 ---
 name: edicao-video-social
-description: Edita vídeos verticais para redes sociais e anúncios com motion da marca: hook, jump cuts com zoom, legendas, tela dividida, tela cheia, texto atrás da pessoa, cor, trilha em dois atos e efeitos sonoros.
+description: Edita vídeos verticais para redes sociais e anúncios com motion da marca: hook, jump cuts com zoom, legendas, tela dividida, tela cheia, texto atrás da pessoa, cor, trilha e efeitos sonoros.
 ---
 
 # Edição de vídeo vertical com motion (redes sociais e anúncios)
@@ -15,7 +15,8 @@ Peça numa mensagem só, antes de qualquer render:
 2. **Elementos do cliente**: imagens de produto com fundo transparente, imagens ambientadas, fotos da pessoa, ícones/ilustrações próprios, animações de elementos da marca (ex.: retângulo do logo animado), transição da marca (.mov com alfa) e tela final.
 3. **Referências** de edição que o cliente gosta.
 4. Quantos vídeos e se é para **anúncio** (variar hooks) ou conteúdo.
-5. **Trilhas**: se a biblioteca `music/` estiver vazia, peça o pacote de músicas do usuário organizado por clima.
+5. **Trilha: sempre pedir ao usuário a(s) música(s) deste trabalho.** A escolha depende do anúncio; não escolha sozinho, não gere com IA e não baixe de bancos. Pergunte também se o roteiro tem virada (dor/desejo → empresa) para usar duas faixas, ou se é uma faixa só.
+6. **Vídeo narrado** (locução sobre imagens/motion, sem a pessoa falando para a câmera): **pedir o arquivo da narração**. Não gerar voz.
 
 Se o usuário disser para seguir sem algum item, siga e diga no fim o que ficou genérico por falta dele.
 
@@ -78,7 +79,7 @@ SPEC = {
  "flash": [{"at": 18.8, "type": "flash"|"invert"|"leak"}],
  "broll": [{"start": 20, "end": 23, "file": "fabrica.mp4", "ss": 0, "zoom": .06}],
  "end": {"transition": "transicao.mov", "card": "tela_final.mp4"},   # ou "card_scene": {"type": "endCard", "cta": "..."}
- "music": {"intro": "dor", "main": "solucao", "pivot": 14.6, "level": -30},  # trilha em 2 atos (ver §5)
+ "music": {"intro_file": "trilha_dor.mp3", "main_file": "trilha_empresa.mp3", "pivot": 14.6, "level": -30},  # ou {"file": "trilha.mp3"} (ver §5)
  "sfx": {"auto": True, "gain": -3, "extra": [["whoosh_low", 12.0]], "mute": ["big_word"]},
 }
 ```
@@ -96,7 +97,12 @@ Tempos do spec = tempos do vídeo **bruto** (o motor converte após os cortes).
 - **Tela dividida**: motion em cima (1080×960), pessoa embaixo enquadrada pelo rosto, linha da marca na divisória; entra com o painel descendo (0,6 s) e sai subindo (0,45 s).
 - **Tela cheia**: painel sobe da base; use na aceleração do meio e para informação que precisa da tela toda.
 - **Tratamento de cor**: `natural` (contraste +6%, saturação +10%, sombras levantadas, balanço de branco automático a 60%) por padrão; `punchy` para anúncio agressivo; `warm`/`cool`/`cine` conforme a marca.
-- **Trilha (sempre que houver biblioteca)**: em dois atos que seguem o roteiro. `intro` acompanha a dor/desejo do começo; na **virada** (`pivot` = tempo no bruto em que a fala passa a falar da empresa, do método ou da solução; ache na transcrição) entra `main` com crossfade de ~1,6 s e um riser bem baixo. Climas = pastas de `music/` (`dor`, `desejo`, `solucao`, `energia`, `neutro`); roteiro que abre com desejo usa `intro: "desejo"`. Com uma faixa só: `{"file": ..., "pivot": ...}` (antes da virada ela vem abafada e abre na virada). Volume em LUFS (`level` −30 padrão; −27 mais presente, −33 discreta) e ducking automático sob a voz. **Lote**: as faixas são sorteadas sem repetir entre os vídeos da mesma pasta-mãe (registro em `_lote_musicas.json`); rebuild do mesmo vídeo mantém a escolha. Música nova na biblioteca: copie para a pasta do clima e rode `python3 engine/music.py scan`. Só use música com licença do usuário (pacote dele); não baixe de sites aleatórios.
+- **Trilha (sempre a que o usuário mandar)**:
+  - Roteiro com virada (abre com dor ou desejo e depois fala da empresa/método/solução): duas faixas, `{"intro_file": "a.mp3", "main_file": "b.mp3", "pivot": t}`; `pivot` = tempo no bruto da virada (ache na transcrição). Crossfade de ~1,6 s e riser bem baixo na virada.
+  - Sem contraste de tom (nem todo anúncio tem dor): uma faixa só, `{"file": "a.mp3"}` sem `pivot`. Com `pivot` numa faixa só, ela vem abafada antes e abre na virada; use só se fizer sentido.
+  - Volume em LUFS (`level` −30 padrão; −27 mais presente, −33 discreta), ducking automático sob a voz.
+  - **Lote**: músicas diferentes entre os vídeos para não ficar repetitivo; se o usuário mandar um conjunto de faixas para o lote todo, distribua sem repetir (ou coloque-as em `music/<clima>/`, rode `python3 engine/music.py scan` e use `{"intro": "<clima>", "main": "<clima>"}`, que sorteia sem repetir entre pastas irmãs).
+- **Vídeo narrado**: `src` = arquivo da narração (só áudio). O fundo vira a cor da marca e o visual vem de painéis `full` e `broll` cobrindo toda a duração; a transcrição e as legendas funcionam igual.
 - **Efeitos sonoros** (automáticos pelos eventos): whoosh em entradas/saídas de painel e troca de cena, impacto no hook, clique em linha grande, pop em chips/ícones, check em itens, carimbo em selos, flash em flash, riser antes de revelação, subdrop na marca. Mínimo de 0,18 s entre efeitos. Nada de efeito em toda palavra. Ajuste o volume geral com `sfx.gain`; silencie um tipo com `sfx.mute`. Catálogo: `sfx/sfx.json`.
 
 ## 6. Render e auditoria
