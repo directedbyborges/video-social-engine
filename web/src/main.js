@@ -110,7 +110,7 @@ function buildPanels(master) {
     const box = P.querySelector('.box');
     s.scenes.forEach((sc, i) => {
       const sec = document.createElement('section'); sec.className = 'scene';
-      sec.innerHTML = `<div class="cam"><div class="fill"></div>${TL.panelDots ? '<div class="dots"></div>' : ''}<div class="glow amb" style="opacity:${TL.panelGlow}"></div><div class="foc">${s.mode === 'full' && sc.title ? `<div class="ptitle">${sc.title}</div>` : ''}${SC[sc.type].html(sc)}</div></div>`;
+      sec.innerHTML = `<div class="cam"><div class="fill"></div>${TL.panelDots ? '<div class="dots"></div>' : ''}<div class="glow amb" style="opacity:${TL.panelGlow}"></div><div class="foc">${s.mode === 'full' && sc.heading ? `<div class="ptitle">${sc.heading}</div>` : ''}${SC[sc.type].html(sc)}</div></div>`;
       box.appendChild(sec);
       const L = sc.end - sc.t, tl = gsap.timeline();
       const cin = i === 0 ? null : CUTSEQ[(si + i - 1) % 4], cout = CUTSEQ[(si + i) % 4], last = i === s.scenes.length - 1;

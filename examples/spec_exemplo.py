@@ -41,8 +41,8 @@ SPEC = {
     {"type": "orbitChips", "t": 6.14, "question": "O que te trava?", "chips": [["Bloqueio", 8.51], ["Insegurança", 9.23], ["Medo de errar", 10.12]]},
   ]},
   {"mode": "full", "start": 22.68, "end": 30.15, "scenes": [
-    {"type": "pillars", "t": 22.68, "title": "O método", "items": [["phosphor-bold:user", "Sessões individuais", 23.37], ["phosphor-bold:arrows-clockwise", "Reprogramação comportamental", 24.43]]},
-    {"type": "pillars", "t": 26.55, "title": "O método", "items": [["brand:symbol", "PNL avançada", 26.85], ["phosphor-bold:lightning", "Aprendizagem acelerada", 28.81]]},
+    {"type": "pillars", "t": 22.68, "heading": "O método", "items": [["phosphor-bold:user", "Sessões individuais", 23.37], ["phosphor-bold:arrows-clockwise", "Reprogramação comportamental", 24.43]]},
+    {"type": "pillars", "t": 26.55, "heading": "O método", "items": [["brand:symbol", "PNL avançada", 26.85], ["phosphor-bold:lightning", "Aprendizagem acelerada", 28.81]]},
   ]},
   {"mode": "split", "start": 34.78, "end": 41.64, "scenes": [
     {"type": "weeks", "t": 34.78, "label": "Poucas semanas", "icon": "phosphor-bold:calendar-check", "times": [35.1, 35.45, 35.8], "diffAt": 36.6},
