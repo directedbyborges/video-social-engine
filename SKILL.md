@@ -77,7 +77,7 @@ SPEC = {
  "flash": [{"at": 18.8, "type": "flash"|"invert"|"leak"}],
  "broll": [{"start": 20, "end": 23, "file": "fabrica.mp4", "ss": 0, "zoom": .06}],
  "end": {"transition": "transicao.mov", "card": "tela_final.mp4"},   # ou "card_scene": {"type": "endCard", "cta": "..."}
- "music": {"file": "trilha.mp3", "gain": -20},  # opcional, com ducking
+ "music": {"intro": "dor", "main": "solucao", "pivot": 14.6, "level": -30},  # trilha em 2 atos (ver §5)
  "sfx": {"auto": True, "gain": -3, "extra": [["whoosh_low", 12.0]], "mute": ["big_word"]},
 }
 ```
@@ -95,6 +95,7 @@ Tempos do spec = tempos do vídeo **bruto** (o motor converte após os cortes).
 - **Tela dividida**: motion em cima (1080×960), pessoa embaixo enquadrada pelo rosto, linha da marca na divisória; entra com o painel descendo (0,6 s) e sai subindo (0,45 s).
 - **Tela cheia**: painel sobe da base; use na aceleração do meio e para informação que precisa da tela toda.
 - **Tratamento de cor**: `natural` (contraste +6%, saturação +10%, sombras levantadas, balanço de branco automático a 60%) por padrão; `punchy` para anúncio agressivo; `warm`/`cool`/`cine` conforme a marca.
+- **Trilha (sempre que houver biblioteca)**: em dois atos que seguem o roteiro. `intro` acompanha a dor/desejo do começo; na **virada** (`pivot` = tempo no bruto em que a fala passa a falar da empresa, do método ou da solução; ache na transcrição) entra `main` com crossfade de ~1,6 s e um riser bem baixo. Climas = pastas de `music/` (`dor`, `desejo`, `solucao`, `energia`, `neutro`). Com uma faixa só: `{"file": ..., "pivot": ...}` (antes da virada ela vem abafada e abre na virada). Volume em LUFS (`level` −30 padrão; −27 mais presente, −33 discreta) e ducking automático sob a voz. **Lote**: as faixas são sorteadas sem repetir entre os vídeos da mesma pasta-mãe (registro em `_lote_musicas.json`); rebuild do mesmo vídeo mantém a escolha. Música nova na biblioteca: copie para a pasta do clima e rode `python3 engine/music.py scan`. Só use música com licença do usuário (pacote dele); não baixe de sites aleatórios.
 - **Efeitos sonoros** (automáticos pelos eventos): whoosh em entradas/saídas de painel e troca de cena, impacto no hook, clique em linha grande, pop em chips/ícones, check em itens, carimbo em selos, flash em flash, riser antes de revelação, subdrop na marca. Mínimo de 0,18 s entre efeitos. Nada de efeito em toda palavra. Ajuste o volume geral com `sfx.gain`; silencie um tipo com `sfx.mute`. Catálogo: `sfx/sfx.json`.
 
 ## 6. Render e auditoria

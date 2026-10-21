@@ -4,6 +4,7 @@ import sys, os, json, re, difflib, glob, importlib.util, subprocess
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT + "/engine")
 from util import mov_cover
+import music
 
 def norm(w): return re.sub(r"[^\wÀ-ú]", "", w.lower())
 
@@ -171,7 +172,7 @@ def main(P):
         "zoom": dict({"jump": [1.0, 1.13, 1.04, 1.17], "anchor_y": 760, "split_ty": 480}, **S.get("zoom", {})),
         "captionY": dict({"full": cap.get("y_full", 1180), "split": cap.get("y_split", 960), "panel": cap.get("y_panel", 1640)}, **S.get("captionY", {})),
         "keyword": cap.get("keyword", "pill"), "panelDots": B.get("panel", {}).get("dots", True), "panelGlow": B.get("panel", {}).get("glow", .55),
-        "music": S.get("music"), "sfx": S.get("sfx", {"auto": True}),
+        "music": music.resolve(S.get("music"), P, total, s2o), "sfx": S.get("sfx", {"auto": True}),
     }
     json.dump(tl, open(P + "/timeline.json", "w"), ensure_ascii=False, indent=1)
     print(f"total {total:.2f}s (fim {end['end']:.2f}s) · cortes {len(cuts)} · palavras sem par {unmatched} · ênfases {len(emph)} · atrás {len(behind)}")

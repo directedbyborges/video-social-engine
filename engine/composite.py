@@ -161,6 +161,7 @@ ev = json.load(open(P + "/sfx_events.json")) if os.path.exists(P + "/sfx_events.
 for f in TL["flashes"]: ev.append(["flash", f["at"]])
 for b in TL["broll"]: ev.append(["scene_cut", b["start"]])
 if E.get("trans"): ev.append(["end_transition", E["trans_start"] + .1])
+if TL.get("music") and TL["music"].get("pivot") is not None: ev.append(["music_turn", TL["music"]["pivot"]])
 SP = TL.get("sfx") or {}
 for x in SP.get("extra", []): ev.append([x[0], x[1]] + x[2:])
 mute = set(SP.get("mute", []))
@@ -191,19 +192,35 @@ if TL.get("tailAudio", True) and TL["srcDur"] - TL["cuts"][-1]["b"] > .05:
 parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1,aresample=48000,apad,atrim=0:{END:.3f},loudnorm=I=-15:TP=-2:LRA=11,aresample=48000[voice]")
 mixl = ["[voice]"]
 for j, (f, start, gain, ln, skip) in enumerate(chosen):
-    inputs += ["-i", f"{SFXD}/{f}.mp3"]; idx = len(inputs) // 2 - 1
+    inputs += ["-i", f"{SFXD}/{f}.mp3"]; idx = inputs.count("-i") - 1
     tr = f"atrim={skip:.3f}" + (f":{skip + ln:.3f}" if ln else "") + ",asetpts=PTS-STARTPTS,"
     fade = f"afade=t=out:st={max(0, ln - .15):.3f}:d=0.15," if ln else ""
     parts.append(f"[{idx}:a]aresample=48000,{tr}{fade}volume={gain}dB,adelay={int(start * 1000)}:all=1[s{j}]"); mixl.append(f"[s{j}]")
-if TL.get("music"):
-    m = TL["music"]; inputs += ["-stream_loop", "-1", "-i", os.path.join(P, m["file"])]; idx = len(inputs) // 2 - 1
-    parts.append(f"[{idx}:a]aresample=48000,atrim=0:{END:.3f},volume={m.get('gain', -20)}dB,afade=t=out:st={END - 1.5:.3f}:d=1.5[mus]")
-    parts.append("[voice]asplit=2[vmain][vsc]"); parts.append("[mus][vsc]sidechaincompress=threshold=0.05:ratio=6:attack=20:release=300[musd]")
+M = TL.get("music")
+if M:
+    # trilha em dois atos: "intro" (dor/desejo) até a virada, "main" (empresa/solução) depois, com crossfade suave.
+    # Uma faixa só: antes da virada ela vem abafada (passa-baixa) e abre na virada.
+    pv = M["pivot"] if M.get("pivot") is not None else END * .4
+    xf = M.get("xfade", 1.6); gi, gm = M.get("gains", [-20, -20])
+    def track(path, lab, extra=""):
+        inputs.extend(["-stream_loop", "-1", "-i", path]); ix = inputs.count("-i") - 1
+        parts.append(f"[{ix}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{END + 2:.3f},asetpts=PTS-STARTPTS{extra}[{lab}]")
+    if M.get("single"):
+        track(M["single"], "m0", f",volume={gi}dB"); parts.append("[m0]asplit=2[ma][mb]")
+        parts.append(f"[ma]lowpass=f=1300,volume=-3dB,afade=t=out:st={pv - xf / 2:.3f}:d={xf:.3f}[mi]")
+        parts.append(f"[mb]afade=t=in:st={pv - xf / 2:.3f}:d={xf:.3f}[mm]")
+    else:
+        track(M["intro"], "mi", f",volume={gi}dB,afade=t=in:d=0.4,afade=t=out:st={pv - xf / 2:.3f}:d={xf:.3f}")
+        track(M["main"], "m1", f",volume={gm}dB")
+        parts.append(f"[m1]afade=t=in:d={xf:.3f},adelay={int(max(0, pv - xf / 2) * 1000)}:all=1[mm]")
+    parts.append(f"[mi][mm]amix=inputs=2:normalize=0,atrim=0:{END:.3f},afade=t=out:st={END - 1.5:.3f}:d=1.5[mus]")
+    parts.append("[voice]asplit=2[vmain][vsc]")
+    parts.append("[mus][vsc]sidechaincompress=threshold=0.04:ratio=5:attack=25:release=350:makeup=1[musd]")
     mixl[0] = "[vmain]"; mixl.append("[musd]")
 parts.append("".join(mixl) + f"amix=inputs={len(mixl)}:normalize=0:dropout_transition=0,atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS,alimiter=limit=0.93[aout]")
 fc = ";".join(parts)
 open(P + "/_filter.txt", "w").write(fc)
 final = f"{P}/{name}.mp4"
 subprocess.run(["ffmpeg", "-v", "error", "-y"] + inputs + ["-i", out_v, "-filter_complex_script", P + "/_filter.txt",
-                "-map", f"{len(inputs) // 2}:v", "-map", "[aout]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", final], check=True)
+                "-map", f"{inputs.count('-i')}:v", "-map", "[aout]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", final], check=True)
 print("ok:", final, f"{t1 - t0:.2f}s")
