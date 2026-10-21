@@ -22,7 +22,7 @@ Se o usuário disser para seguir sem algum item, siga e diga no fim o que ficou 
 
 ## 1. Setup (uma vez por sessão)
 
-O repositório é privado: anexe-o à sessão com a ferramenta de adicionar repositório (owner `directedbyborges`, repo `video-social-engine`) e clone com o comando que ela devolver; depois `./setup.sh`. Se não houver acesso, peça ao usuário para conectar o GitHub. Nunca recrie o motor do zero.
+O repositório é privado: anexe-o à sessão com a ferramenta de adicionar repositório (owner `directedbyborges`, repo `video-social-engine`) e clone com o comando que ela devolver; depois `./setup.sh`. Se a ferramenta disser que não tem acesso, peça ao usuário para conectar o GitHub em Configurações → Conectores e liberar esse repositório para o app do Claude no GitHub. Nunca recrie o motor do zero.
 Python com `-I` ao processar arquivos baixados. Cada vídeo é uma pasta de projeto: `spec.py` + `transcript.json` + saídas. Vídeos do mesmo lote ficam em pastas irmãs (mesma pasta-mãe).
 
 ## 2. Identidade visual primeiro (o mais importante)
