@@ -15,13 +15,14 @@ Peça numa mensagem só, antes de qualquer render:
 2. **Elementos do cliente**: imagens de produto com fundo transparente, imagens ambientadas, fotos da pessoa, ícones/ilustrações próprios, animações de elementos da marca (ex.: retângulo do logo animado), transição da marca (.mov com alfa) e tela final.
 3. **Referências** de edição que o cliente gosta.
 4. Quantos vídeos e se é para **anúncio** (variar hooks) ou conteúdo.
+5. **Trilhas**: se a biblioteca `music/` estiver vazia, peça o pacote de músicas do usuário organizado por clima.
 
 Se o usuário disser para seguir sem algum item, siga e diga no fim o que ficou genérico por falta dele.
 
 ## 1. Setup (uma vez por sessão)
 
 O repositório é privado: anexe-o à sessão com a ferramenta de adicionar repositório (owner `directedbyborges`, repo `video-social-engine`) e clone com o comando que ela devolver; depois `./setup.sh`. Se não houver acesso, peça ao usuário para conectar o GitHub. Nunca recrie o motor do zero.
-Python com `-I` ao processar arquivos baixados. Cada vídeo é uma pasta de projeto: `spec.py` + `transcript.json` + saídas.
+Python com `-I` ao processar arquivos baixados. Cada vídeo é uma pasta de projeto: `spec.py` + `transcript.json` + saídas. Vídeos do mesmo lote ficam em pastas irmãs (mesma pasta-mãe).
 
 ## 2. Identidade visual primeiro (o mais importante)
 
@@ -44,8 +45,8 @@ O que faz a edição parecer "feita por IA" é visual genérico: ícones de uma 
 ## 3. Transcrição e roteiro de edição
 
 1. `python3 -I engine/transcribe.py bruto.mov <proj>/transcript.json` (Whisper local; tempo por palavra estimado).
-2. Leia a transcrição: marque takes errados/repetidos (`cut.remove`), a última palavra útil (`cut.end_word`) e o hook.
-3. Escreva o `spec.py` (modelo comentado em `examples/spec_exemplo.py`). Para vídeos com mais de 30 s ou lote, mostre a tabela (hook escolhido, momentos de tela dividida/cheia, destaques) ao usuário antes do render completo.
+2. Leia a transcrição: marque takes errados/repetidos (`cut.remove`), a última palavra útil (`cut.end_word`), o hook e a **virada** (momento em que sai da dor/desejo e passa a falar da empresa/método/solução → `music.pivot`).
+3. Escreva o `spec.py` (modelo comentado em `examples/spec_exemplo.py`). Para vídeos com mais de 30 s ou lote, mostre a tabela (hook escolhido, momentos de tela dividida/cheia, destaques, virada da trilha) ao usuário antes do render completo.
 
 ### Curva de ritmo (obrigatória)
 | Trecho | Tempo | O que acontece |
@@ -95,7 +96,7 @@ Tempos do spec = tempos do vídeo **bruto** (o motor converte após os cortes).
 - **Tela dividida**: motion em cima (1080×960), pessoa embaixo enquadrada pelo rosto, linha da marca na divisória; entra com o painel descendo (0,6 s) e sai subindo (0,45 s).
 - **Tela cheia**: painel sobe da base; use na aceleração do meio e para informação que precisa da tela toda.
 - **Tratamento de cor**: `natural` (contraste +6%, saturação +10%, sombras levantadas, balanço de branco automático a 60%) por padrão; `punchy` para anúncio agressivo; `warm`/`cool`/`cine` conforme a marca.
-- **Trilha (sempre que houver biblioteca)**: em dois atos que seguem o roteiro. `intro` acompanha a dor/desejo do começo; na **virada** (`pivot` = tempo no bruto em que a fala passa a falar da empresa, do método ou da solução; ache na transcrição) entra `main` com crossfade de ~1,6 s e um riser bem baixo. Climas = pastas de `music/` (`dor`, `desejo`, `solucao`, `energia`, `neutro`). Com uma faixa só: `{"file": ..., "pivot": ...}` (antes da virada ela vem abafada e abre na virada). Volume em LUFS (`level` −30 padrão; −27 mais presente, −33 discreta) e ducking automático sob a voz. **Lote**: as faixas são sorteadas sem repetir entre os vídeos da mesma pasta-mãe (registro em `_lote_musicas.json`); rebuild do mesmo vídeo mantém a escolha. Música nova na biblioteca: copie para a pasta do clima e rode `python3 engine/music.py scan`. Só use música com licença do usuário (pacote dele); não baixe de sites aleatórios.
+- **Trilha (sempre que houver biblioteca)**: em dois atos que seguem o roteiro. `intro` acompanha a dor/desejo do começo; na **virada** (`pivot` = tempo no bruto em que a fala passa a falar da empresa, do método ou da solução; ache na transcrição) entra `main` com crossfade de ~1,6 s e um riser bem baixo. Climas = pastas de `music/` (`dor`, `desejo`, `solucao`, `energia`, `neutro`); roteiro que abre com desejo usa `intro: "desejo"`. Com uma faixa só: `{"file": ..., "pivot": ...}` (antes da virada ela vem abafada e abre na virada). Volume em LUFS (`level` −30 padrão; −27 mais presente, −33 discreta) e ducking automático sob a voz. **Lote**: as faixas são sorteadas sem repetir entre os vídeos da mesma pasta-mãe (registro em `_lote_musicas.json`); rebuild do mesmo vídeo mantém a escolha. Música nova na biblioteca: copie para a pasta do clima e rode `python3 engine/music.py scan`. Só use música com licença do usuário (pacote dele); não baixe de sites aleatórios.
 - **Efeitos sonoros** (automáticos pelos eventos): whoosh em entradas/saídas de painel e troca de cena, impacto no hook, clique em linha grande, pop em chips/ícones, check em itens, carimbo em selos, flash em flash, riser antes de revelação, subdrop na marca. Mínimo de 0,18 s entre efeitos. Nada de efeito em toda palavra. Ajuste o volume geral com `sfx.gain`; silencie um tipo com `sfx.mute`. Catálogo: `sfx/sfx.json`.
 
 ## 6. Render e auditoria
@@ -103,12 +104,12 @@ Tempos do spec = tempos do vídeo **bruto** (o motor converte após os cortes).
 ```bash
 ./vse.sh preview <proj> 0 6     # hook: confira antes de tudo (envie ao usuário e siga)
 ./vse.sh all <proj>             # completo + auditoria
-./vse.sh final <proj>           # só recompõe (mudou cor, áudio, sfx, final) — não re-renderiza gráficos
+./vse.sh final <proj>           # só recompõe (mudou cor, áudio, trilha, sfx, final) — não re-renderiza gráficos
 ```
-Olhe `audit/folha_*.png` e `audit/cortes.png`; leia `audit/energia.txt` (janela < 0,25 = parado) e o loudness (alvo ≈ −14 LUFS). Confira: legenda não cobre boca na tela dividida, texto atrás da pessoa legível, nenhum quadro vazio após corte, fala do apresentador até o fim, ritmo com contraste hook/meio.
+Olhe `audit/folha_*.png` e `audit/cortes.png`; leia `audit/energia.txt` (janela < 0,25 = parado) e o loudness (alvo ≈ −14 LUFS). Confira: legenda não cobre boca na tela dividida, texto atrás da pessoa legível, nenhum quadro vazio após corte, fala do apresentador até o fim, ritmo com contraste hook/meio, virada da trilha no lugar certo.
 
 **Economia de token**: olhe folhas de contato pequenas (200 px) e só amplie o quadro que levantar dúvida; use `preview` no trecho alterado; `final` quando o ajuste não mexe em gráfico.
 
 ## 7. Entrega
 
-Envie os MP4 (1080×1920, 30 fps). Diga em poucas linhas: hook usado em cada vídeo, o que ficou genérico por falta de material e o que pode ser ajustado. Ajustes pedidos: mude o spec e rode só o necessário.
+Envie os MP4 (1080×1920, 30 fps). Diga em poucas linhas: hook e trilhas usados em cada vídeo, o que ficou genérico por falta de material e o que pode ser ajustado. Ajustes pedidos: mude o spec e rode só o necessário.
