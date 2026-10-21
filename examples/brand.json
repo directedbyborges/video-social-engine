@@ -1,0 +1,16 @@
+{
+  "name": "Plínio de Souza PNL",
+  "colors": {"c1": "#00FFEA", "c2": "#042241", "ink": "#042241", "paper": "#ffffff", "bg": "#042241", "bg2": "#0a3560", "text": "#ffffff"},
+  "fonts": {
+    "head": {"family": "Poppins", "fontsource": "poppins", "weights": [700, 800, 900]},
+    "body": {"family": "Poppins", "fontsource": "poppins", "weights": [500, 600, 700]}
+  },
+  "files": {"logo": "logo.png", "symbol": "symbol.png"},
+  "icons": {"family": "phosphor-bold", "stroke": 2},
+  "shape": {"radius": 40, "pill_radius": 999},
+  "captions": {"size": 58, "weight": 700, "big_size": 104, "big_weight": 800, "keyword": "pill", "y_full": 1180, "y_split": 960, "y_panel": 1640},
+  "panel": {"dots": true, "glow": 0.55},
+  "grade": "natural",
+  "flash": "flash",
+  "devices": "Cérebro em linha (labirinto) do logo como símbolo; pílula ciano com texto navy; brilho ciano subindo da base; linha ciano divisória."
+}

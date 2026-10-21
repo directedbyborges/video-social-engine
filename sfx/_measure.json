@@ -1,0 +1,107 @@
+{
+ "camera_blip.mp3": {
+  "dur": 0.57,
+  "onset": 0.12,
+  "peak": 0.25
+ },
+ "camera_shutter.mp3": {
+  "dur": 0.82,
+  "onset": 0.12,
+  "peak": 0.2
+ },
+ "check.mp3": {
+  "dur": 1.22,
+  "onset": 0.12,
+  "peak": 0.17
+ },
+ "counter.mp3": {
+  "dur": 0.86,
+  "onset": 0.07,
+  "peak": 0.45
+ },
+ "counterr.mp3": {
+  "dur": 0.86,
+  "onset": 0.07,
+  "peak": 0.07
+ },
+ "cymbal_riser.mp3": {
+  "dur": 2.42,
+  "onset": 0.07,
+  "peak": 0.62
+ },
+ "hud.mp3": {
+  "dur": 1.39,
+  "onset": 0.15,
+  "peak": 0.23
+ },
+ "hud_riser.mp3": {
+  "dur": 1.22,
+  "onset": 0.3,
+  "peak": 0.6
+ },
+ "increase.mp3": {
+  "dur": 1.39,
+  "onset": 0.1,
+  "peak": 0.33
+ },
+ "keyboard.mp3": {
+  "dur": 6.86,
+  "onset": 0.07,
+  "peak": 3.73
+ },
+ "riser_whoosh_sharp.mp3": {
+  "dur": 1.7,
+  "onset": 0.05,
+  "peak": 0.57
+ },
+ "sharp_riser.mp3": {
+  "dur": 2.35,
+  "onset": 0.1,
+  "peak": 0.17
+ },
+ "short_riser_reverb.mp3": {
+  "dur": 5.93,
+  "onset": 0.2,
+  "peak": 0.35
+ },
+ "short_whoosh_a.mp3": {
+  "dur": 0.98,
+  "onset": 0.12,
+  "peak": 0.33
+ },
+ "shutter.mp3": {
+  "dur": 0.53,
+  "onset": 0.15,
+  "peak": 0.15
+ },
+ "shutter_impact.mp3": {
+  "dur": 2.86,
+  "onset": 0.2,
+  "peak": 0.28
+ },
+ "subdrop.mp3": {
+  "dur": 3.94,
+  "onset": 0.12,
+  "peak": 0.23
+ },
+ "type_shutter.mp3": {
+  "dur": 0.82,
+  "onset": 0.23,
+  "peak": 0.23
+ },
+ "typewriter.mp3": {
+  "dur": 3.96,
+  "onset": 0.15,
+  "peak": 3.4
+ },
+ "whoosh_low.mp3": {
+  "dur": 0.98,
+  "onset": 0.12,
+  "peak": 0.35
+ },
+ "whoosh_reverb.mp3": {
+  "dur": 2.33,
+  "onset": 0.1,
+  "peak": 0.33
+ }
+}

@@ -1,0 +1,72 @@
+/* Tudo que é visual vem das variáveis da marca (injetadas pelo build a partir do brand.json) */
+:root{--c1:#00FFEA;--c2:#042241;--ink:#042241;--paper:#ffffff;--bg:#042241;--bg2:#0a3560;--text:#ffffff;
+  --font-head:'Poppins';--font-body:'Poppins';--font-hand:'Caveat';--radius:40px;--pill-radius:999px;
+  --cap-size:58px;--cap-weight:700;--cap-track:-.025em;--cap-case:none;--cap-font:var(--font-body);
+  --big-size:104px;--big-weight:800;--big-track:-.045em;--big-case:uppercase;--big-font:var(--font-head);
+  --kw-stroke:6px;--kw-radius:22px;--shadow:0 3px 16px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.5)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;background:transparent;overflow:hidden;font-family:var(--font-body),sans-serif;-webkit-font-smoothing:antialiased}
+#stage{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:hidden}
+.panel{position:absolute;left:0;top:0;width:1080px;overflow:hidden;background:var(--bg);visibility:hidden}
+.panel.split{height:960px}.panel.full{height:1920px}
+.panel .divider{position:absolute;left:0;bottom:0;width:1080px;height:6px;background:var(--c1);box-shadow:0 0 24px 4px color-mix(in srgb,var(--c1) 55%,transparent);z-index:50}
+.panel.full .box{position:absolute;left:0;top:480px;width:1080px;height:960px;transform:scale(1.14);transform-origin:540px 480px}
+.panel.split .box{position:absolute;left:0;top:0;width:1080px;height:960px}
+.scene{position:absolute;inset:0;visibility:hidden;overflow:visible}
+.cam{position:absolute;inset:0;transform-origin:540px 480px}
+.fill{position:absolute;inset:-30%;background:var(--bgfill)}
+.panel.full .fill{inset:-80% -30%}
+.dots{position:absolute;inset:-80% -30%;background:radial-gradient(circle at center,color-mix(in srgb,var(--text) 7%,transparent) 2px,transparent 2.5px) 0 0/48px 48px}
+.glow{position:absolute;left:-540px;top:560px;width:2160px;height:900px;border-radius:50%;
+  background:radial-gradient(ellipse at center,color-mix(in srgb,var(--c1) 55%,transparent) 0%,color-mix(in srgb,var(--c1) 18%,transparent) 34%,transparent 66%)}
+.foc{position:absolute;inset:0;transform-origin:540px 480px}
+.ptitle{position:absolute;left:80px;right:80px;top:-290px;text-align:center;color:var(--text);font-family:var(--big-font);font-weight:var(--big-weight);
+  font-size:88px;letter-spacing:var(--big-track);line-height:1.02;text-transform:var(--big-case)}
+.abs{position:absolute}
+.card{position:absolute;background:var(--paper);border-radius:var(--radius);box-shadow:0 30px 80px rgba(0,0,0,.38);color:var(--ink)}
+.ttl{font-family:var(--font-head);font-weight:var(--big-weight);letter-spacing:-.035em;line-height:1.02}
+.chip{position:absolute;white-space:nowrap;background:var(--c1);color:var(--ink);font-family:var(--font-head);font-weight:800;font-size:54px;letter-spacing:-.03em;
+  padding:16px 40px;border-radius:var(--pill-radius);box-shadow:0 16px 50px color-mix(in srgb,var(--c1) 35%,transparent)}
+.chipO{position:absolute;white-space:nowrap;border:4px solid var(--c1);color:var(--text);font-weight:700;font-size:50px;letter-spacing:-.03em;
+  padding:12px 38px;border-radius:var(--pill-radius);background:color-mix(in srgb,var(--c1) 8%,transparent)}
+svg{overflow:visible}
+.ico{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ic svg,.icx svg{width:100%;height:100%}
+.icx{display:block}
+.icx img{width:100%;height:100%;object-fit:contain}
+/* legendas */
+.caps{position:absolute;left:0;top:0;width:1080px;height:1920px;pointer-events:none}
+.capsC{position:absolute;left:0;top:0;width:1080px}
+.grp{position:absolute;left:60px;width:960px;top:0;display:flex;flex-direction:column;align-items:center;visibility:hidden}
+.ln{display:block;position:relative;text-align:center;white-space:nowrap;color:var(--text);font-family:var(--cap-font);font-weight:var(--cap-weight);
+  font-size:var(--cap-size);letter-spacing:var(--cap-track);text-transform:var(--cap-case);line-height:1.14;text-shadow:var(--shadow)}
+.ln.big{font-family:var(--big-font);font-weight:var(--big-weight);font-size:var(--big-size);letter-spacing:var(--big-track);line-height:1.0;text-transform:var(--big-case)}
+.grp.hook .ln.big{font-size:calc(var(--big-size) * 1.3)}
+.grp.behind .ln.big{font-size:calc(var(--big-size) * 1.9);text-shadow:none}
+.tk{display:inline-block;white-space:nowrap;position:relative}
+.tk.gap{margin-right:.26em}
+.ln.big .tk.gap{margin-right:.22em}
+.kgap{display:inline-block;width:.26em}
+.tk.cy{color:var(--c1)}
+.kw{display:inline-block;position:relative;margin:8px 0 4px}
+.kw .kbg{position:absolute;inset:0;transform-origin:0 50%}
+.kw .tk{position:relative}
+/* estilos do destaque (device da marca) */
+.kw.pill{padding:4px 34px 8px}
+.kw.pill .kbg{background:var(--c1);border-radius:var(--pill-radius);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.kw.pill .tk{color:var(--ink);text-shadow:none}
+.kw.marker{padding:2px 22px 6px}
+.kw.marker .kbg{background:var(--c1);transform:skewX(-8deg)}
+.kw.marker .tk{color:var(--ink);text-shadow:none}
+.kw.frame{padding:10px 40px 14px;margin:14px 0 10px}
+.kw.frame .kbg{border:var(--kw-stroke) solid var(--c1);border-radius:var(--kw-radius);background:color-mix(in srgb,var(--c2) 18%,transparent)}
+.kw.lines{padding:14px 18px 16px;margin:10px 0}
+.kw.lines .kbg{border-top:4px solid var(--c1);border-bottom:4px solid var(--c1)}
+.kw.color .tk{color:var(--c1)}
+.kw.scribble{padding:6px 26px 10px}
+.kw.scribble .kbg svg{position:absolute;left:-14px;top:-12px}
+/* pílulas empilhadas (@pills) */
+.ln.pl{margin:6px 0;padding:6px 44px 10px;border-radius:var(--pill-radius);position:relative;font-family:var(--font-head);font-weight:800;text-shadow:none;color:var(--pill-text,#fff)}
+.ln.pl .kbg{position:absolute;inset:0;border-radius:inherit;background:var(--pill-bg,var(--c1));box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.35);transform-origin:50% 50%}
+.ln.pl .tk{position:relative}
+.glogo{height:86px;margin-bottom:18px;filter:drop-shadow(0 3px 12px rgba(0,0,0,.5))}
