@@ -1,6 +1,6 @@
 ---
 name: edicao-video-social
-description: Edita vídeos verticais (9:16) para redes sociais e anúncios com motion da marca — hook chamativo, cortes de silêncio com jump cut e zoom, legendas com destaque da identidade visual, tela dividida, motion em tela cheia, texto atrás da pessoa, tratamento de cor e efeitos sonoros. Use quando o usuário mandar vídeos brutos de alguém falando para editar para Reels/TikTok/Shorts/anúncio.
+description: Edita vídeos verticais para redes sociais e anúncios com motion da marca: hook, jump cuts com zoom, legendas, tela dividida, tela cheia, texto atrás da pessoa, cor, trilha em dois atos e efeitos sonoros.
 ---
 
 # Edição de vídeo vertical com motion (redes sociais e anúncios)
