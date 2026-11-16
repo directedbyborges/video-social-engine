@@ -66,23 +66,87 @@ def src_frame(idx):
         if len(buf) < W * H * 3: break
         cur = np.frombuffer(buf, np.uint8).reshape(H, W, 3); cur_idx += 1
     return cur
+# ---------- b-roll (vídeo ou foto) ----------
+# chaves: file, ss, focus [x,y] (0..1 do quadro), scale (>=1, zoom extra para reenquadrar), dim (0..0.4),
+#         tin/tout (zin|zout|panL|panR|panU|panD|none), mz (in|out: zoom do meio), zoom (push linear; padrão 0 vídeo, .05 foto)
+IMG_EXT = (".png", ".jpg", ".jpeg", ".webp")
+PAN = 320
+BR = TL["broll"]
+for i, b in enumerate(BR):   # entrada automática: cena encostada na anterior herda a saída dela
+    if "tin" not in b and i > 0 and abs(BR[i - 1]["end"] - b["start"]) < .05: b["tin"] = BR[i - 1].get("tout")
+os.makedirs(P + "/_broll", exist_ok=True)
+def prep_broll(i, b):
+    """Recorta, reduz (cobre 1350x2400), trata a cor e fixa 30 fps. Cache em <proj>/_broll."""
+    dur = b["end"] - b["start"] + .8
+    out = f"{P}/_broll/{i:02d}_{os.path.basename(b['file']).rsplit('.', 1)[0]}_{b.get('ss', 0)}_{dur:.2f}.mp4"
+    if os.path.exists(out): return out
+    img = b["file"].lower().endswith(IMG_EXT)
+    try:
+        if not img: g = grade.vf(b["file"], TL["grade"])
+        else:   # foto: sem balanço de branco automático (precisa de vídeo para medir)
+            pr = grade.PRESETS.get(TL["grade"]) if isinstance(TL["grade"], str) else TL["grade"]
+            g = grade.vf(b["file"], dict(pr, wb=0)) if pr else None
+    except Exception: g = None
+    vf = "scale=1350:2400:force_original_aspect_ratio=increase:force_divisible_by=2" + ("," + g if g else "") + ",fps=30,format=yuv420p"
+    src = (["-loop", "1", "-framerate", "30", "-t", f"{dur:.2f}", "-i", b["file"]] if img else ["-ss", f"{b.get('ss', 0):.3f}", "-t", f"{dur:.2f}", "-i", b["file"]])
+    subprocess.run(["ffmpeg", "-v", "error", "-y"] + src + ["-vf", vf, "-an", "-c:v", "libx264", "-crf", "14", "-preset", "veryfast", out], check=True)
+    return out
+for i, b in enumerate(BR):
+    b["_img"] = b["file"].lower().endswith(IMG_EXT); b["_cache"] = prep_broll(i, b); b["_i"] = i
+def expo_out(x): return 1.0 if x >= 1 else 1 - 2 ** (-10 * max(0, x))
+def expo_in(x): return 0.0 if x <= 0 else 2 ** (10 * (min(1, x) - 1))
+def p2io(x): x = min(1, max(0, x)); return 2 * x * x if x < .5 else 1 - (-2 * x + 2) ** 2 / 2
+def cam_state(d, enter):
+    return {"zin": (1.2, 0, 0), "zout": (.82, 0, 0), "panR": (1, -PAN if enter else PAN, 0), "panL": (1, PAN if enter else -PAN, 0),
+            "panU": (1, 0, PAN if enter else -PAN), "panD": (1, 0, -PAN if enter else PAN)}.get(d)
+def cam_at(b, t):
+    """(k, dx, dy) da camada de transição: entrada expo.out, saída expo.in, meio parado (igual ao camCut das cenas)."""
+    L = b["end"] - b["start"]; u = t - b["start"]; IN, OUT = min(.85, L * .4), min(.7, L * .35)
+    k, dx, dy = 1.0, 0.0, 0.0
+    a = cam_state(b.get("tin"), True)
+    if a and u < IN:
+        e = expo_out(u / IN); k = a[0] + (1 - a[0]) * e; dx = a[1] * (1 - e); dy = a[2] * (1 - e)
+    z = cam_state(b.get("tout"), False)
+    if z and u > L - OUT:
+        e = expo_in((u - (L - OUT)) / OUT); k = 1 + (z[0] - 1) * e; dx = z[1] * e; dy = z[2] * e
+    return k, dx, dy
+def mid_at(b, t):
+    L = b["end"] - b["start"]; u = t - b["start"]; d = min(.8, L * .4); m = b.get("mz"); amt = b.get("mz_amount", .08)
+    z = 1 + b.get("zoom", .05 if b["_img"] else 0) * (u / max(L, .1))
+    if m == "in": z *= 1 + amt * p2io((u - (L / 2 - d / 2)) / d)
+    elif m == "out": z *= 1 + amt * (1 - p2io((u - (L / 2 - d / 2)) / d))
+    return z
 broll_caps = {}
-def broll_frame(b, t):
-    key = b["file"]
-    if key not in broll_caps:
-        cap = cv2.VideoCapture(b["file"]); cap.set(cv2.CAP_PROP_POS_MSEC, b.get("ss", 0) * 1000); broll_caps[key] = [cap, None, -1]
-    st = broll_caps[key]; fps = st[0].get(cv2.CAP_PROP_FPS) or 30
-    want = int((t - b["start"]) * fps)
+def broll_src(b, t):
+    key = b["_i"]
+    if key not in broll_caps: broll_caps[key] = [cv2.VideoCapture(b["_cache"]), None, -1]
+    st = broll_caps[key]; want = int(round((t - b["start"]) * 30))
     while st[2] < want:
         ok, fr = st[0].read()
         if not ok: break
         st[1] = fr; st[2] += 1
-    fr = st[1]; h, w = fr.shape[:2]
-    u = (t - b["start"]) / max(.1, b["end"] - b["start"]); z = 1 + b.get("zoom", .06) * u
-    s = max(W / w, H / h) * z
-    M = np.float32([[s, 0, W / 2 - w * s / 2], [0, s, H / 2 - h * s / 2]])
-    out = cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LINEAR)
-    if VF: pass
+    return st[1]
+def broll_warp(fr, b, t):
+    h, w = fr.shape[:2]
+    s0 = max(W / w, H / h) * b.get("scale", 1.0) * mid_at(b, t)
+    fx, fy = b.get("focus", [.5, .5])
+    tx = min(0, max(W - w * s0, W / 2 - fx * w * s0)); ty = min(0, max(H - h * s0, H / 2 - fy * h * s0))
+    k, dx, dy = cam_at(b, t)
+    M = np.float32([[k * s0, 0, k * tx + W / 2 - W / 2 * k + dx], [0, k * s0, k * ty + H / 2 - H / 2 * k + dy]])
+    return cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT101)
+def broll_frame(b, t):
+    fr = broll_src(b, t)
+    if fr is None: return np.full((H, W, 3), BG, np.uint8)
+    # desfoque de movimento perto do corte: média de subquadros quando a câmera anda rápido
+    k1, x1, y1 = cam_at(b, t - 1 / 120); k2, x2, y2 = cam_at(b, t + 1 / 120)
+    speed = abs(k2 - k1) * 900 + abs(x2 - x1) + abs(y2 - y1)
+    if speed > 6:
+        n = 5 if speed < 40 else 7
+        acc = np.zeros((H, W, 3), np.float32)
+        for j in range(n): acc += broll_warp(fr, b, t + (j - (n - 1) / 2) / (n - 1) / 30 * .9)
+        out = (acc / n).astype(np.uint8)
+    else: out = broll_warp(fr, b, t)
+    if b.get("dim"): out = (out.astype(np.float32) * (1 - b["dim"])).astype(np.uint8)
     return out
 tf_cap, tf_idx, tf_frame = (cv2.VideoCapture(E["card"]), -1, None) if E.get("card") else (None, -1, None)
 TR = sorted(glob.glob(frames_dir(E["trans"]) + "/*.png")) if E.get("trans") else []
@@ -193,7 +257,7 @@ n = len(TL["cuts"])
 if TL.get("tailAudio", True) and TL["srcDur"] - TL["cuts"][-1]["b"] > .05:
     ta = TL["cuts"][-1]["b"]
     parts.append(f"[0:a]atrim={ta:.3f}:{TL['srcDur']:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={max(0, TL['srcDur'] - ta - .12):.3f}:d=0.12[v{n}]"); n += 1
-parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1,aresample=48000,apad,atrim=0:{END:.3f},loudnorm=I=-15:TP=-2:LRA=11,aresample=48000[voice]")
+parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1,aresample=48000,apad,atrim=0:{END:.3f},acompressor=threshold=0.25:ratio=3:attack=10:release=150,loudnorm=I=-16:TP=-3:LRA=9,aresample=48000[voice]")
 mixl = ["[voice]"]
 for j, (f, start, gain, ln, skip) in enumerate(chosen):
     inputs += ["-i", f"{SFXD}/{f}.mp3"]; idx = inputs.count("-i") - 1
@@ -206,25 +270,36 @@ if M:
     # Uma faixa só: antes da virada ela vem abafada (passa-baixa) e abre na virada.
     pv = M["pivot"] if M.get("pivot") is not None else END * .4
     xf = M.get("xfade", 1.6); gi, gm = M.get("gains", [-20, -20])
-    def track(path, lab, extra=""):
-        inputs.extend(["-stream_loop", "-1", "-i", path]); ix = inputs.count("-i") - 1
+    def track(path, lab, extra="", ss=0):
+        inputs.extend(["-stream_loop", "-1"] + (["-ss", f"{ss:.2f}"] if ss else []) + ["-i", path]); ix = inputs.count("-i") - 1
         parts.append(f"[{ix}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{END + 2:.3f},asetpts=PTS-STARTPTS{extra}[{lab}]")
     if M.get("single"):
-        track(M["single"], "m0", f",volume={gi}dB"); parts.append("[m0]asplit=2[ma][mb]")
+        track(M["single"], "m0", f",volume={gi}dB", M.get("ss", 0)); parts.append("[m0]asplit=2[ma][mb]")
         parts.append(f"[ma]lowpass=f=1300,volume=-3dB,afade=t=out:st={pv - xf / 2:.3f}:d={xf:.3f}[mi]")
         parts.append(f"[mb]afade=t=in:st={pv - xf / 2:.3f}:d={xf:.3f}[mm]")
     else:
-        track(M["intro"], "mi", f",volume={gi}dB,afade=t=in:d=0.4,afade=t=out:st={pv - xf / 2:.3f}:d={xf:.3f}")
-        track(M["main"], "m1", f",volume={gm}dB")
+        track(M["intro"], "mi", f",volume={gi}dB,afade=t=in:d=0.4,afade=t=out:st={pv - xf / 2:.3f}:d={xf:.3f}", M.get("intro_ss", 0))
+        track(M["main"], "m1", f",volume={gm}dB", M.get("main_ss", 0))
         parts.append(f"[m1]afade=t=in:d={xf:.3f},adelay={int(max(0, pv - xf / 2) * 1000)}:all=1[mm]")
     parts.append(f"[mi][mm]amix=inputs=2:normalize=0,atrim=0:{END:.3f},afade=t=out:st={END - 1.5:.3f}:d=1.5[mus]")
     parts.append("[voice]asplit=2[vmain][vsc]")
     parts.append("[mus][vsc]sidechaincompress=threshold=0.04:ratio=5:attack=25:release=350:makeup=1[musd]")
     mixl[0] = "[vmain]"; mixl.append("[musd]")
-parts.append("".join(mixl) + f"amix=inputs={len(mixl)}:normalize=0:dropout_transition=0,atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS,alimiter=limit=0.93[aout]")
+parts.append("".join(mixl) + f"amix=inputs={len(mixl)}:normalize=0:dropout_transition=0,atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS[aout]")
 fc = ";".join(parts)
 open(P + "/_filter.txt", "w").write(fc)
+mixw = f"{P}/_{name}_mix.wav"
+subprocess.run(["ffmpeg", "-v", "error", "-y"] + inputs + ["-filter_complex_script", P + "/_filter.txt", "-map", "[aout]", "-c:a", "pcm_s24le", "-ar", "48000", mixw], check=True)
+def loud(f):
+    e = subprocess.run(["ffmpeg", "-i", f, "-af", "ebur128=peak=true", "-f", "null", "-"], capture_output=True, text=True).stderr.splitlines()
+    I = [l for l in e if l.strip().startswith("I:")]; TP = [l for l in e if l.strip().startswith("Peak:")]
+    return float(I[-1].split()[1]) if I else -20.0, float(TP[-1].split()[1]) if TP else 0.0
+I0, _ = loud(mixw)
+gain = -14.0 - I0
 final = f"{P}/{name}.mp4"
-subprocess.run(["ffmpeg", "-v", "error", "-y"] + inputs + ["-i", out_v, "-filter_complex_script", P + "/_filter.txt",
-                "-map", f"{inputs.count('-i')}:v", "-map", "[aout]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", final], check=True)
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", out_v, "-i", mixw, "-map", "0:v", "-map", "1:a",
+                "-af", f"volume={gain:.2f}dB,alimiter=limit=0.75:attack=4:release=60:level=disabled,aresample=48000",
+                "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-shortest", "-movflags", "+faststart", final], check=True)
+I1, TP1 = loud(final)
+print(f"áudio: mix {I0:.1f} LUFS -> {I1:.1f} LUFS, true peak {TP1:.1f} dBTP")
 print("ok:", final, f"{t1 - t0:.2f}s")

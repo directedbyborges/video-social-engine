@@ -260,6 +260,9 @@
     ],
     "music_turn": [
       "short_riser_reverb"
+    ],
+    "click": [
+      "camera_blip"
     ]
   }
 }

@@ -7,7 +7,7 @@ const path = require('path'), fs = require('fs');
   const a = +(process.argv[4] || 0), b = +(process.argv[5] || 1e9);
   const out = P + (layer === 'behind' ? '/gb' : '/g'); fs.mkdirSync(out, { recursive: true });
   const TL = JSON.parse(fs.readFileSync(P + '/timeline.json', 'utf8'));
-  const browser = await chromium.launch({ executablePath: process.env.VSE_CHROME || '/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell' });
+  const browser = await chromium.launch({ executablePath: process.env.VSE_CHROME || (() => { try { const d = fs.readdirSync('/opt/pw-browsers').filter(x => x.startsWith('chromium_headless_shell')).sort().pop(); const c = ['/opt/pw-browsers/' + d + '/chrome-linux/headless_shell', '/opt/pw-browsers/' + d + '/chrome-headless-shell-linux64/chrome-headless-shell'].find(p => fs.existsSync(p)); return c; } catch (e) { return undefined; } })() });
   const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
   page.on('pageerror', e => console.log('PAGEERR', e.message));
   page.on('console', m => { if (m.type() === 'error') console.log('CONSOLE', m.text()); });

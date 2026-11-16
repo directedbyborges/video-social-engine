@@ -1,3 +1,25 @@
 web/node_modules/
 __pycache__/
 *.pyc
+# projetos: só código, roteiro, spec e marca vão para o git; mídia e saídas ficam fora
+projetos/**/*.mp4
+projetos/**/*.mov
+projetos/**/*.mp3
+projetos/**/*.wav
+projetos/**/*.m4a
+projetos/**/_provisorio/
+projetos/**/_broll/
+projetos/**/g/
+projetos/**/gb/
+projetos/**/audit/
+projetos/**/index.html
+projetos/**/timeline.json
+projetos/**/sfx_events.json
+projetos/**/_filter.txt
+projetos/**/_*.log
+projetos/**/_*.wav
+projetos/**/cliente/
+projetos/**/entrega/
+projetos/**/transcript.json
+projetos/**/spec.py
+projetos/**/_lote_musicas.json

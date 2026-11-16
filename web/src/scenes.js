@@ -458,3 +458,229 @@ SC.endCard = {
     const s = el.querySelector('.sub'); if (s) enterBlur(tl, s, .9, { y: 40, opacity: 0 }, .5);
   }
 };
+
+// ================= Cenas de marca (área 1080x960, centro 540,480 = centro da tela com panel.scale 1) =================
+// Texto com *destaque* vira Bold (contraste Regular x Bold). Cores: var(--c2) azul da marca, var(--apoio) traço.
+const KB = s => String(s).replace(/\*(.+?)\*/g, '<b>$1</b>');
+const APOIO = 'var(--apoio,#617DAE)';
+const SCURVE = 'power4.inOut';
+// ícones de linha no estilo da marca (traço ~3 em 100)
+const BRAND_ICON = {
+  gota: c => `<svg viewBox="0 0 100 100" width="100%" height="100%"><path d="M50 12C50 12 22 46 22 64a28 28 0 0 0 56 0C78 46 50 12 50 12Z" fill="none" stroke="${c}" stroke-width="3.4" stroke-linejoin="round"/><path d="M36 66a14 14 0 0 0 12 13" fill="none" stroke="${c}" stroke-width="3.4" stroke-linecap="round"/></svg>`,
+  sol: c => `<svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="17" fill="none" stroke="${c}" stroke-width="3.4"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(a => { const r = a * Math.PI / 4, co = Math.cos(r), si = Math.sin(r); return `<line x1="${50 + 27 * co}" y1="${50 + 27 * si}" x2="${50 + 38 * co}" y2="${50 + 38 * si}" stroke="${c}" stroke-width="3.4" stroke-linecap="round"/>`; }).join('')}</svg>`,
+  camadas: c => (SVGT.camadas || '').replace(/fill="#[0-9A-Fa-f]{6}"/g, `fill="${c}"`).replace(/width="\d+" height="\d+"/, 'width="100%" height="100%"'),
+};
+const BI = (k, c) => BRAND_ICON[k] ? BRAND_ICON[k](c) : I(k, c);
+function tracePath(kind, w, h, r = 24) {
+  if (kind === 'gancho') return `M0 62 L${w + 4} 62 C${w + 42} 62 ${w + 56} 44 ${w + 56} 10`;
+  if (kind === 'onda') return `M0 24 C${w * .3} 6 ${w * .55} 38 ${w} 12`;
+  if (kind === 'sublinhado') return `M0 ${h + 8} L${w + 10 - r} ${h + 8} Q${w + 10} ${h + 8} ${w + 10} ${h + 8 - r} L${w + 10} ${h * .1}`;
+  if (kind === 'colchete') return `M-6 ${h + 4} L-6 ${r - 6} Q-6 -6 ${r - 6} -6 L${w * .45} -6 M${w * .62} ${h + 8} L${w + 10 - r} ${h + 8} Q${w + 10} ${h + 8} ${w + 10} ${h + 8 - r} L${w + 10} ${h * .45}`;
+  return '';
+}
+function rise(tl, el, t, d = .6, y = 40) { tl.fromTo(el, { y, opacity: 0, filter: 'blur(12px)' }, { y: 0, opacity: 1, filter: 'blur(0px)', duration: d, ease: 'expo.out', immediateRender: false }, t); tl.set(el, { opacity: 0 }, 0); }
+
+// Box 3D sutil: lines [["texto *destaque*", t, px]], theme 'azul' | 'branco', y = centro
+SC.box3d = {
+  html: p => `<div class="abs" style="left:0;right:0;top:${p.y ?? 440}px;display:flex;justify-content:center;perspective:1400px;transform:translateY(-50%)">
+    <div class="bx3" style="padding:${p.pad || '56px 64px 64px'};text-align:center;letter-spacing:-.03em;background:${p.theme === 'branco' ? '#fff' : 'var(--c2)'};color:${p.theme === 'branco' ? 'var(--c2)' : '#fff'};max-width:900px">
+    ${p.lines.map(l => `<div class="r" style="font-size:${l[2] || 72}px;line-height:1.02;font-weight:400;white-space:nowrap">${KB(l[0])}</div>`).join('')}</div></div>`,
+  sfx: p => [['ui_card', 0]],
+  build(tl, el, p, L) {
+    const bx = el.querySelector('.bx3');
+    tl.fromTo(bx, { rotationY: 12, rotationX: -6, z: -120, opacity: 0, filter: 'blur(10px)' }, { rotationY: 4, rotationX: -2, z: 0, opacity: 1, filter: 'blur(0px)', duration: .85, ease: 'expo.out' }, 0);
+    tl.to(bx, { rotationY: 1, rotationX: 0, z: 20, duration: Math.max(.1, L - .85), ease: 'none' }, .85);
+    el.querySelectorAll('.r').forEach((r, i) => rise(tl, r, Math.max(p.lines[i][1] || 0, .12 + i * .12), .6, 40));
+    el.querySelectorAll('.r b').forEach(b => b.style.fontWeight = 800);
+  }
+};
+
+// Lettering de produto: sobretítulo + palavra gigante + traço da marca + apoio
+SC.lettering = {
+  html: p => `<div class="abs" style="left:0;right:0;top:${p.y ?? 430}px;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;color:${p.color || '#fff'}">
+    ${p.sobre ? `<div class="so" style="font-size:40px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">${p.sobre}</div>` : ''}
+    <div class="bgw" style="position:relative"><div class="bg" style="font-size:${p.size || 320}px;font-weight:800;letter-spacing:-.04em;line-height:.92">${p.big}</div><svg class="trs" style="position:absolute;overflow:visible"></svg></div>
+    ${p.sub ? `<div class="sb" style="font-size:50px;font-weight:400;margin-top:${p.trace ? 64 : 24}px;letter-spacing:-.01em">${KB(p.sub)}</div>` : ''}</div>`,
+  sfx: p => [['big_word', .05]],
+  build(tl, el, p, L) {
+    const bg = el.querySelector('.bg'), so = el.querySelector('.so'), sb = el.querySelector('.sb'), sv = el.querySelector('.trs');
+    tl.fromTo(bg, { scale: 1.3, opacity: 0, filter: 'blur(14px)' }, { scale: 1, opacity: 1, filter: 'blur(0px)', duration: .8, ease: 'expo.out' }, .05);
+    if (so) rise(tl, so, .15, .6, -30);
+    if (p.trace) {
+      const w = bg.offsetWidth * .9, k = (p.size || 320) / 320;
+      sv.setAttribute('width', w + 60); sv.setAttribute('height', 70); sv.style.left = (bg.offsetWidth * .05 - 4) + 'px'; sv.style.top = (bg.offsetHeight - 26 * k) + 'px';
+      sv.innerHTML = `<path d="${tracePath(p.trace, w)}" fill="none" stroke="${APOIO}" stroke-width="${9 * Math.max(.7, k)}" stroke-linecap="round"/>`;
+      draw(tl, sv.querySelector('path'), .5, .7, SCURVE);
+    }
+    if (sb) rise(tl, sb, .75, .6, 30);
+  }
+};
+
+// Text label da marca: frase curta com traço fino (sublinhado | colchete)
+SC.rotulo = {
+  html: p => `<div class="abs" style="left:0;right:0;top:${p.y ?? 560}px;display:flex;justify-content:center;transform:translateY(-50%)">
+    <div class="rt" style="position:relative;font-size:${p.size || 76}px;font-weight:600;letter-spacing:-.02em;padding:22px 34px;color:${p.color || '#fff'};white-space:nowrap">${KB(p.text)}<svg class="rs" style="position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible"></svg></div></div>`,
+  sfx: p => [['pill', .25]],
+  build(tl, el, p, L) {
+    const rt = el.querySelector('.rt'), sv = el.querySelector('.rs');
+    sv.innerHTML = `<path d="${tracePath(p.forma || 'sublinhado', rt.offsetWidth, rt.offsetHeight, 28)}" fill="none" stroke="${p.color || '#fff'}" stroke-width="4.5" stroke-linecap="round"/>`;
+    rise(tl, rt, .05, .6, 30);
+    sv.querySelectorAll('path').forEach(pp => draw(tl, pp, .3, .7, SCURVE));
+  }
+};
+
+// Selos de atributo: heading + itens [[ícone, rótulo, t]] (círculo desenha por trace; no tempo falado ganha check)
+SC.selos = {
+  html: p => `<div class="abs" style="left:0;right:0;top:${p.y ?? 440}px;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;color:#fff">
+    ${p.heading ? `<div class="hd" style="font-size:40px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:60px">${p.heading}</div>` : ''}
+    <div style="display:flex;gap:44px">${p.items.map((it, i) => `<div class="se s${i}" style="display:flex;flex-direction:column;align-items:center;width:250px">
+      <div style="position:relative;width:236px;height:236px">
+        <svg width="236" height="236" style="position:absolute;inset:0"><circle class="cc" cx="118" cy="118" r="114" fill="none" stroke="#fff" stroke-width="4" transform="rotate(-90 118 118)"/></svg>
+        <div class="ri" style="position:absolute;inset:0;border:4px solid #fff;border-radius:50%;opacity:0"></div>
+        <div class="ic" style="position:absolute;left:58px;top:58px;width:120px;height:120px">${BI(it[0], '#fff')}</div>
+        <div class="ck" style="position:absolute;right:0;top:4px;width:58px;height:58px;border-radius:50%;background:#fff;display:grid;place-items:center;opacity:0"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M7 15.5l5.5 5.5L23.5 9" fill="none" stroke="#2E507B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div><div class="lb" style="margin-top:22px;font-size:38px;font-weight:800;text-transform:uppercase">${it[1]}</div></div>`).join('')}</div></div>`,
+  sfx: p => p.items.map((it, i) => ['check', Math.max(.9 + i * .1, it[2] || 0)]),
+  build(tl, el, p, L) {
+    const hd = el.querySelector('.hd'); if (hd) rise(tl, hd, .05, .6, -30);
+    p.items.forEach((it, i) => {
+      const s = el.querySelector('.s' + i), d = .12 + i * .15;
+      draw(tl, s.querySelector('.cc'), d, .75, SCURVE);
+      tl.fromTo(s.querySelector('.ic'), { scale: .7, rotation: -10, opacity: 0, filter: 'blur(10px)' }, { scale: 1, rotation: 0, opacity: 1, filter: 'blur(0px)', duration: .6, ease: 'expo.out', immediateRender: false }, d + .25);
+      tl.set(s.querySelector('.ic'), { opacity: 0 }, 0);
+      rise(tl, s.querySelector('.lb'), d + .35, .55, 24);
+      const at = Math.max(.9 + i * .1, it[2] || 0);
+      tl.fromTo(s.querySelector('.ck'), { scale: .6, opacity: 0 }, { scale: 1, opacity: 1, duration: .35, ease: 'expo.out', immediateRender: false }, at);
+      tl.fromTo(s.querySelector('.ri'), { scale: 1, opacity: .7 }, { scale: 1.4, opacity: 0, duration: .55, ease: 'power2.out', immediateRender: false }, at);
+    });
+  }
+};
+
+// Palavras grandes: lines [["texto *destaque*", t, px]]; letters: monta letra por letra; strike: {line, at} traço riscando
+SC.bigWords = {
+  html: p => `<div class="abs" style="left:60px;right:60px;top:${p.y ?? 440}px;transform:translateY(-50%);text-align:center;color:${p.color || '#fff'};letter-spacing:-.04em">
+    ${p.lines.map((l, i) => `<div class="bl l${i}" style="position:relative;display:block;font-size:${l[2] || 150}px;font-weight:400;line-height:.98;white-space:nowrap">${
+      String(l[0]).split(' ').map(w => { const k = /^\*.*\*[.,!?]*$/.test(w) || /^\*/.test(w); const tx = w.replace(/\*/g, ''); return `<span class="w" style="display:inline-block;margin:0 .1em;${k ? 'font-weight:800' : ''}">${p.letters ? tx.split('').map(c => `<span class="ch" style="display:inline-block">${c}</span>`).join('') : tx}</span>`; }).join('')}</div>`).join('')}
+    <svg class="stk" style="position:absolute;left:0;top:0;overflow:visible" width="10" height="10"></svg></div>`,
+  sfx: p => p.lines.map((l, i) => ['big_word', Math.max(l[1] || 0, .05 + i * .25)]).concat(p.strike ? [['stamp', p.strike.at]] : []),
+  build(tl, el, p, L) {
+    p.lines.forEach((l, i) => {
+      const t = Math.max(l[1] || 0, .05 + i * .25), items = el.querySelectorAll(`.l${i} ${p.letters ? '.ch' : '.w'}`);
+      tl.set(items, { opacity: 0 }, 0);
+      tl.fromTo(items, { y: 46, opacity: 0, filter: 'blur(16px)' }, { y: 0, opacity: 1, filter: 'blur(0px)', duration: .65, ease: 'expo.out', stagger: p.letters ? .04 : .08, immediateRender: false }, t);
+    });
+    if (p.trace) {   // traço da marca sob a última linha (onda / gancho)
+      const li = p.lines.length - 1, ln = el.querySelector('.l' + li), sv = el.querySelector('.stk');
+      const w = ln.offsetWidth * .8, x0 = ln.offsetLeft + ln.offsetWidth * .1, y0 = ln.offsetTop + ln.offsetHeight + 4;
+      sv.innerHTML = `<path transform="translate(${x0} ${y0 - (p.trace === 'gancho' ? 56 : 14)})" d="${tracePath(p.trace, w)}" fill="none" stroke="${APOIO}" stroke-width="9" stroke-linecap="round"/>`;
+      draw(tl, sv.querySelector('path'), Math.max(p.lines[li][1] || 0, .05 + li * .25) + .45, .7, SCURVE);
+    }
+    if (p.strike) {
+      const ln = el.querySelector('.l' + (p.strike.line ?? p.lines.length - 1)), sv = el.querySelector('.stk'), w = ln.offsetWidth * .78, x0 = ln.offsetLeft + ln.offsetWidth * .11, y0 = ln.offsetTop + ln.offsetHeight * .56;
+      sv.innerHTML = `<path d="M${x0} ${y0 + 14} C${x0 + w * .3} ${y0 - 4} ${x0 + w * .62} ${y0 + 10} ${x0 + w} ${y0 - 12}" fill="none" stroke="${APOIO}" stroke-width="14" stroke-linecap="round"/>`;
+      draw(tl, sv.querySelector('path'), p.strike.at, .6, SCURVE);
+    }
+  }
+};
+
+// Número grande contando + rótulo
+SC.statBig = {
+  html: p => `<div class="abs" style="left:0;right:0;top:${p.y ?? 440}px;transform:translateY(-50%);text-align:center;color:#fff">
+    <div class="nm" style="font-size:${p.size || 420}px;font-weight:800;letter-spacing:-.05em;line-height:.88;font-variant-numeric:tabular-nums">0</div>
+    <div class="lb" style="font-size:110px;font-weight:400;letter-spacing:-.03em;line-height:1">${KB(p.label || '')}</div></div>`,
+  sfx: p => [['counter', .05]],
+  build(tl, el, p, L) {
+    const nm = el.querySelector('.nm'), o = { v: 0 };
+    tl.fromTo(nm, { scale: 1.25, opacity: 0, filter: 'blur(14px)' }, { scale: 1, opacity: 1, filter: 'blur(0px)', duration: .8, ease: 'expo.out' }, .05);
+    tl.to(o, { v: p.to, duration: p.dur || .8, ease: 'expo.out', onUpdate: () => { nm.textContent = Math.round(o.v); } }, .05);
+    rise(tl, el.querySelector('.lb'), .45, .6, 40);
+  }
+};
+
+// Selo grande da marca (círculo de traço fino + ícone + duas linhas em caixa-alta)
+SC.seloBig = {
+  html: p => `<div class="abs" style="left:0;right:0;top:${p.y ?? 470}px;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;color:${p.color || 'var(--c2)'}">
+    <div style="position:relative;width:440px;height:440px"><svg width="440" height="440" style="position:absolute;inset:0"><circle class="cc" cx="220" cy="220" r="216" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(-90 220 220)"/></svg>
+    <div class="ic" style="position:absolute;left:100px;top:84px;width:240px;height:240px">${BI(p.icon || 'camadas', p.iconColor || '#2E507B')}</div></div>
+    <div class="t1" style="margin-top:40px;font-size:66px;font-weight:800;text-transform:uppercase;letter-spacing:.01em">${p.t1 || ''}</div>
+    <div class="t2" style="font-size:44px;font-weight:400;text-transform:uppercase;letter-spacing:.05em">${p.t2 || ''}</div></div>`,
+  sfx: p => [['icon_pop', .35]],
+  build(tl, el, p, L) {
+    draw(tl, el.querySelector('.cc'), .05, .75, SCURVE);
+    tl.fromTo(el.querySelector('.ic'), { scale: .7, rotation: -10, opacity: 0, filter: 'blur(10px)' }, { scale: 1, rotation: 0, opacity: 1, filter: 'blur(0px)', duration: .6, ease: 'expo.out', immediateRender: false }, .3);
+    tl.set(el.querySelector('.ic'), { opacity: 0 }, 0);
+    rise(tl, el.querySelector('.t1'), .5, .6, 30); rise(tl, el.querySelector('.t2'), .62, .6, 30);
+  }
+};
+
+// Card de cadastro: fields [[rótulo, valor, t]]
+SC.form = {
+  html: p => `<div class="abs" style="left:0;right:0;top:${p.y ?? 470}px;transform:translateY(-50%);display:flex;justify-content:center">
+    <div class="fc" style="background:#fff;color:var(--grafite,#201D1D);width:780px;padding:56px 60px 60px;text-align:left">
+    <div class="ft" style="font-size:56px;font-weight:700;color:var(--c2);letter-spacing:-.02em;margin-bottom:30px">${p.title || 'Cadastro'}</div>
+    ${p.fields.map((f, i) => `<div class="fd f${i}" style="border-bottom:3px solid var(--cinza,#D7D8D9);padding:14px 0 12px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:flex-end">
+      <div><div style="font-size:24px;font-weight:600;letter-spacing:.06em;color:var(--logo,#476D9E);text-transform:uppercase">${f[0]}</div><div class="v" style="font-size:44px;font-weight:500">${f[1]}</div></div>
+      <div class="ok" style="width:46px;height:46px;border-radius:50%;background:var(--c2);display:grid;place-items:center;opacity:0"><svg width="28" height="28" viewBox="0 0 30 30"><path d="M7 15.5l5.5 5.5L23.5 9" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>`).join('')}
+    <div class="fb" style="margin-top:34px;background:var(--c2);color:#fff;font-size:42px;font-weight:700;height:108px;display:flex;align-items:center;justify-content:center">${p.button || 'Enviar'}</div></div></div>`,
+  sfx: p => [['ui_card', 0]].concat(p.fields.map((f, i) => ['check', Math.max(f[2] || 0, .35 + i * .32) + .4])),
+  build(tl, el, p, L) {
+    tl.fromTo(el.querySelector('.fc'), { y: 120, opacity: 0, filter: 'blur(14px)' }, { y: 0, opacity: 1, filter: 'blur(0px)', duration: .8, ease: 'expo.out' }, 0);
+    p.fields.forEach((f, i) => {
+      const t = Math.max(f[2] || 0, .35 + i * .32), fd = el.querySelector('.f' + i);
+      tl.fromTo(fd.querySelector('.v'), { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .4, ease: 'power2.out', immediateRender: false }, t);
+      tl.set(fd.querySelector('.v'), { clipPath: 'inset(0% 100% 0% 0%)' }, 0);
+      tl.fromTo(fd.querySelector('.ok'), { scale: .6, opacity: 0 }, { scale: 1, opacity: 1, duration: .3, ease: 'expo.out', immediateRender: false }, t + .4);
+    });
+    const tb = .35 + p.fields.length * .32 + .3;
+    tl.fromTo(el.querySelector('.fb'), { scale: .94, filter: 'brightness(1)' }, { scale: 1, filter: 'brightness(1.25)', duration: .25, ease: 'power2.out', yoyo: true, repeat: 1, immediateRender: false }, tb);
+  }
+};
+
+// Assinatura: logo cresce do zero, sobe e encolhe -25%; lettering com traço da marca
+SC.logoSign = {
+  html: p => `<img class="abs lg" src="${IMG[p.logo || 'logo']}" style="left:${540 - (p.w || 640) / 2}px;top:${480 - (p.w || 640) * .147 / 2}px;width:${p.w || 640}px">
+    <div class="abs rows" style="left:0;right:0;top:${p.rowsY ?? 520}px;display:flex;justify-content:center;color:#fff">
+      <div style="position:relative;text-align:left;letter-spacing:-.02em">${(p.rows || []).map((r, i) => `<div class="rw r${i}" style="font-size:${r[1] || 86}px;font-weight:400;line-height:1">${KB(r[0])}</div>`).join('')}
+      <svg class="trs" style="position:absolute;left:0;overflow:visible"></svg></div></div>`,
+  sfx: p => [['brand_reveal', 0]],
+  build(tl, el, p, L) {
+    const lg = el.querySelector('.lg'), up = p.up ?? 170;
+    tl.fromTo(lg, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: .95, ease: 'power4.out' }, 0);
+    tl.to(lg, { scale: .75, y: -up, duration: .8, ease: SCURVE }, .8);
+    el.querySelectorAll('.rw b').forEach(b => b.style.fontWeight = 800);
+    el.querySelectorAll('.rw').forEach((r, i) => rise(tl, r, 1.05 + i * .12, .6, 40));
+    if (p.trace) {
+      const last = el.querySelector('.r' + ((p.rows || []).length - 1)), sv = el.querySelector('.trs');
+      if (last) {
+        const w = last.querySelector('b') ? last.querySelector('b').offsetWidth : last.offsetWidth;
+        sv.setAttribute('width', w + 60); sv.setAttribute('height', 70); sv.style.top = (last.offsetTop + last.offsetHeight - 30) + 'px';
+        sv.innerHTML = `<path d="${tracePath(p.trace, w)}" fill="none" stroke="${APOIO}" stroke-width="7" stroke-linecap="round"/>`;
+        draw(tl, sv.querySelector('path'), 1.35, .7, SCURVE);
+      }
+    }
+  }
+};
+
+// Botão de CTA (canto vivo) + cursor clicando + textinho abaixo
+SC.ctaButton = {
+  html: p => { const y = p.y ?? 440, bw = p.bw || 640, bh = 150; return `
+    <div class="abs bt" style="left:${540 - bw / 2}px;top:${y - bh / 2}px;width:${bw}px;height:${bh}px;background:#fff;color:var(--c2);font-size:62px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;justify-content:center;gap:28px">${p.cta || 'Saiba mais'}
+      <svg viewBox="0 0 22 20" width="64" height="56"><path d="M2 10h17M12 3l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="abs ri" style="left:${540 + bw / 2 - 150 - 70}px;top:${y + 20 - 70}px;width:140px;height:140px;border:5px solid #fff;border-radius:50%;opacity:0"></div>
+    <div class="abs cu" style="left:${540 + bw / 2 - 150 - 8}px;top:${y + 20 - 6}px;width:110px;height:138px;transform-origin:8px 6px"><svg viewBox="0 0 40 50" width="110" height="138" style="overflow:visible"><path d="M4 3 L4 38 L13 30 L19 45 L26 42 L20 28 L32 28 Z" fill="#fff" stroke="#2E507B" stroke-width="2.6" stroke-linejoin="round"/></svg></div>
+    ${(p.sub || []).map((s, i) => `<div class="abs sb s${i}" style="left:0;right:0;top:${y + bh / 2 + 50 + i * 56}px;text-align:center;color:#fff;font-size:48px;font-weight:400;letter-spacing:-.01em;line-height:1.1">${KB(s)}</div>`).join('')}`; },
+  sfx: p => [['click', p.clickAt ?? 1.35]],
+  build(tl, el, p, L) {
+    const bt = el.querySelector('.bt'), cu = el.querySelector('.cu'), ri = el.querySelector('.ri'), c = p.clickAt ?? 1.35;
+    el.querySelectorAll('.sb b').forEach(b => b.style.fontWeight = 800);
+    tl.fromTo(bt, { scale: .85, opacity: 0, filter: 'blur(12px)' }, { scale: 1, opacity: 1, filter: 'blur(0px)', duration: .8, ease: 'expo.out' }, .05);
+    tl.fromTo(cu, { x: 260, y: 420, rotation: -12, opacity: 0 }, { x: 0, y: 0, rotation: 0, opacity: 1, duration: .85, ease: SCURVE, immediateRender: false }, c - .9);
+    tl.set(cu, { opacity: 0 }, 0);
+    tl.to(cu, { keyframes: { scale: [1, .85, 1] }, duration: .2, ease: 'none' }, c);
+    tl.to(bt, { keyframes: { scale: [1, .95, 1] }, duration: .25, ease: 'none' }, c);
+    tl.fromTo(bt, { filter: 'brightness(1.3)' }, { filter: 'brightness(1)', duration: .35, ease: 'power2.out', immediateRender: false }, c + .02);
+    tl.fromTo(ri, { scale: 0, opacity: .5 }, { scale: 1.6, opacity: 0, duration: .5, ease: 'power2.out', immediateRender: false }, c + .02);
+    el.querySelectorAll('.sb').forEach((s, i) => rise(tl, s, c + .15 + i * .12, .6, 30));
+    if (L - c > 1.2) tl.to(cu, { x: 80, y: 160, opacity: 0, duration: .6, ease: 'power2.inOut' }, L - .7);
+  }
+};

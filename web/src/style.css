@@ -10,7 +10,14 @@ html,body{width:1080px;height:1920px;background:transparent;overflow:hidden;font
 .panel{position:absolute;left:0;top:0;width:1080px;overflow:hidden;background:var(--bg);visibility:hidden}
 .panel.split{height:960px}.panel.full{height:1920px}
 .panel .divider{position:absolute;left:0;bottom:0;width:1080px;height:6px;background:var(--c1);box-shadow:0 0 24px 4px color-mix(in srgb,var(--c1) 55%,transparent);z-index:50}
-.panel.full .box{position:absolute;left:0;top:480px;width:1080px;height:960px;transform:scale(1.14);transform-origin:540px 480px}
+.panel.full .box{position:absolute;left:0;top:480px;width:1080px;height:960px;transform:scale(var(--panel-scale,1.14));transform-origin:540px 480px}
+.panel.clear{background:transparent}
+.sw{position:absolute;inset:0;transform-origin:540px 480px}
+.arc{position:absolute;left:-1220px;top:107px;width:2300px;height:1333px;max-width:none}
+.maskx{position:absolute;inset:0;visibility:hidden;pointer-events:none;z-index:90}
+.maskx i{position:absolute;border-radius:50%;transform-origin:50% 50%}
+.cbox{display:flex;flex-direction:column;align-items:center;background:var(--c2);padding:22px 44px 28px;max-width:864px}
+.cbox .ln{text-shadow:none;line-height:1.08}
 .panel.split .box{position:absolute;left:0;top:0;width:1080px;height:960px}
 .scene{position:absolute;inset:0;visibility:hidden;overflow:visible}
 .cam{position:absolute;inset:0;transform-origin:540px 480px}

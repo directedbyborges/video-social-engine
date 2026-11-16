@@ -108,6 +108,11 @@ def main(P):
     for i, (gi, li, ti, _) in enumerate(disp): groups[gi]["lines"][li]["toks"][ti]["t"] = round(s2o(tmap[i]), 3)
     for g in groups: g["t"] = min(t["t"] for l in g["lines"] for t in l["toks"]) - .05
     for i, g in enumerate(groups): g["end"] = groups[i + 1]["t"] if i + 1 < len(groups) else total + .4
+    for g in groups:   # @until=<tempo bruto>: o grupo sai no corte da cena; @out=zin|zout|panL|panR|panU|panD|fade: saída junto com a cena
+        for f in list(g["flags"]):
+            if f.startswith("until="): g["end"] = min(g["end"], round(s2o(float(f[6:])), 3)); g["flags"].remove(f)
+            elif f.startswith("out="): g["out"] = f[4:]; g["flags"].remove(f)
+            elif f.startswith("start="): g["t"] = max(g["t"], round(s2o(float(f[6:])), 3)); g["flags"].remove(f)
     # ---------- painéis ----------
     TK = ("t", "start", "end", "typeEnd", "at")
     def conv(x, key=None):
@@ -124,6 +129,7 @@ def main(P):
         for k in ("start", "end"):
             nb = min(bounds, key=lambda b: abs(b - s[k]))
             if abs(nb - s[k]) < .35: s[k] = round(nb, 3)
+        if s["scenes"] and abs(s["scenes"][0]["t"] - s["start"]) < .35: s["scenes"][0]["t"] = s["start"]
         for i, sc in enumerate(s["scenes"]): sc["end"] = s["scenes"][i + 1]["t"] if i + 1 < len(s["scenes"]) else s["end"]
     # ---------- final (transição da marca + card) ----------
     E = S.get("end", {}); end = {"trans": None}; gfx_end = total
@@ -139,6 +145,19 @@ def main(P):
         end["card"] = os.path.normpath(os.path.join(os.path.dirname(S["brand"]), E["card"]))
         d = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", end["card"]], capture_output=True, text=True).stdout)
         end["end"] = end["card_start"] + d
+    elif E.get("scenes"):
+        def shift(x, t0, key=None):
+            if isinstance(x, dict): return {k: (v + t0 if (k == "at" or k.endswith("At")) and isinstance(v, (int, float)) else shift(v, t0, k)) for k, v in x.items()}
+            if isinstance(x, list):
+                if key == "lines": return [[l[0], l[1] + t0] + l[2:] for l in x]
+                if len(x) and isinstance(x[-1], (int, float)) and isinstance(x[0], str): return x[:-1] + [x[-1] + t0]
+                return [shift(y, t0, key) for y in x]
+            return x
+        st = total + E.get("gap", 0.0); t = st; scs = []
+        for sc in E["scenes"]:
+            d = sc.get("dur", 2.5); x = shift({k: v for k, v in sc.items() if k != "dur"}, t); x["t"] = round(t, 3); x["end"] = round(t + d, 3); scs.append(x); t += d
+        panels.append({"mode": "full", "start": round(st, 3), "end": round(t, 3), "hold": True, "bg": E.get("bg", "arcos"), "enter": E.get("enter", "cut"), "scenes": scs})
+        end["end"] = round(t, 3); gfx_end = t
     elif E.get("card_scene"):
         cs = dict(E["card_scene"]); dur = E.get("card_dur", 3.5)
         st = end["card_start"] - (0 if E.get("transition") else 0)
@@ -173,6 +192,8 @@ def main(P):
         "captionY": dict({"full": cap.get("y_full", 1180), "split": cap.get("y_split", 960), "panel": cap.get("y_panel", 1640)}, **S.get("captionY", {})),
         "keyword": cap.get("keyword", "pill"), "panelDots": B.get("panel", {}).get("dots", True), "panelGlow": B.get("panel", {}).get("glow", .55),
         "music": music.resolve(S.get("music"), P, total, s2o), "sfx": S.get("sfx", {"auto": True}),
+        "capBox": bool(cap.get("box")), "masks": [round(s2o(m), 3) for m in S.get("masks", [])],
+        "personality": B.get("motion", {}).get("personality", "geometrica"),
     }
     json.dump(tl, open(P + "/timeline.json", "w"), ensure_ascii=False, indent=1)
     print(f"total {total:.2f}s (fim {end['end']:.2f}s) · cortes {len(cuts)} · palavras sem par {unmatched} · ênfases {len(emph)} · atrás {len(behind)}")

@@ -44,7 +44,10 @@ function theme() {
     '--shadow': cap.shadow || '0 3px 16px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.5)',
     '--pill-bg': cap.pill_bg || 'var(--c1)', '--pill-text': cap.pill_text || 'var(--ink)',
     '--bgfill': (B.panel && B.panel.fill) || `linear-gradient(180deg, color-mix(in srgb, ${c.bg || c.c2} 85%, #000) 0%, ${c.bg || c.c2} 55%, ${c.bg2 || c.bg || c.c2} 100%)`,
+    '--panel-scale': B.panel?.scale ?? 1.14, '--trace-radius': (B.shape?.trace_radius ?? 24) + 'px',
   };
+  // cores extras da marca viram variáveis (--apoio, --cinza...)
+  for (const [k, x] of Object.entries(c)) if (!['c1', 'c2', 'ink', 'paper', 'bg', 'bg2', 'text'].includes(k)) v['--' + k.replace(/_/g, '-')] = x;
   return ':root{' + Object.entries(v).map(([k, x]) => `${k}:${x}`).join(';') + '}\n' + (B.css || '');
 }
 // ---------- ícones usados ----------
@@ -63,15 +66,19 @@ function icons() {
   }
   return out;
 }
-const IMG = {
-  logo: dataURI(path.resolve(BD, B.files.logo)),
-  symbol: dataURI(path.resolve(BD, B.files.symbol || B.files.logo)),
-};
+// todos os arquivos da marca viram IMG.<chave>; SVGs também em SVGT.<chave> (texto, para animar peça por peça)
+const IMG = {}, SVGT = {};
+for (const [k, f] of Object.entries(B.files || {})) {
+  const fp = path.resolve(BD, f); if (!fs.existsSync(fp)) continue;
+  IMG[k] = dataURI(fp);
+  if (fp.toLowerCase().endsWith('.svg')) SVGT[k] = fs.readFileSync(fp, 'utf8').replace(/<\?xml.*?\?>/, '');
+}
+if (!IMG.symbol) IMG.symbol = IMG.logo;
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>${fontFaces()}\n${R('src/style.css')}\n${theme()}</style></head><body>
 <div id="stage"><div id="caps" class="caps"><div id="capsC" class="capsC"></div><div id="capsF" class="capsC"></div></div></div>
 <script>${R('node_modules/gsap/dist/gsap.min.js')}</script>
 <script>${R('node_modules/roughjs/bundled/rough.js')}</script>
-<script>const TL=${JSON.stringify(TL)};const IMG=${JSON.stringify(IMG)};const ICONS=${JSON.stringify(icons())};</script>
+<script>const TL=${JSON.stringify(TL)};const IMG=${JSON.stringify(IMG)};const SVGT=${JSON.stringify(SVGT)};const ICONS=${JSON.stringify(icons())};</script>
 <script>${R('src/lib.js')}\n${R('src/scenes.js')}\n${R('src/main.js')}</script></body></html>`;
 fs.writeFileSync(P + '/index.html', html);
 console.log('built', P + '/index.html', (html.length / 1e6).toFixed(2) + 'MB');

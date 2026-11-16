@@ -1,0 +1,21 @@
+{
+ "name": "Romplas",
+ "colors": {"c1": "#FFFFFF", "c2": "#2E507B", "ink": "#2E507B", "paper": "#FFFFFF", "bg": "#2E507B", "bg2": "#476D9E", "text": "#FFFFFF",
+            "apoio": "#617DAE", "logo": "#476D9E", "grafite": "#201D1D", "cinza": "#D7D8D9", "cinza_claro": "#F1F1F1"},
+ "fonts": {
+  "head": {"family": "Source Sans 3", "file": "fonts/SourceSans3-VariableFont_wght.ttf", "weight": "200 900"},
+  "body": {"family": "Source Sans 3", "file": "fonts/SourceSans3-VariableFont_wght.ttf", "weight": "200 900"}
+ },
+ "files": {"logo": "logo-mono-branco.svg", "symbol": "simbolo-branco.svg", "logoColor": "logo-principal.svg",
+           "arcos": "fundo-arcos-azul.svg", "arcosBranco": "fundo-arcos-branco.svg", "camadas": "selo-icone-camadas.svg"},
+ "icons": {"family": "brand", "stroke": 2},
+ "shape": {"radius": 0, "pill_radius": 0, "trace_radius": 24},
+ "captions": {"size": 62, "weight": 500, "tracking": -0.02, "big_size": 110, "big_weight": 800, "big_case": "none", "big_tracking": -0.035,
+              "keyword": "color", "box": true, "shadow": "none", "y_full": 1110, "y_split": 960, "y_panel": 1110},
+ "panel": {"dots": false, "glow": 0, "scale": 1},
+ "motion": {"personality": "geometrica"},
+ "grade": "natural",
+ "flash": "flash",
+ "css": ".tk.cy{font-weight:800}",
+ "devices": "Arcos (discos azul-apoio/institucional/logo deslocando para a direita, canto inferior direito) como fundo e máscara de transição; traço curvo azul-apoio (gancho/onda/parêntese) dos letterings; text label com traço fino de cantos 24px (sublinhado/colchete); selos circulares de traço fino com ícone de linha; CTA retangular de canto vivo; contraste Regular x Bold na mesma frase."
+}

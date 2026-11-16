@@ -1,22 +1,36 @@
 // Cores sempre via variáveis da marca
 const CY = 'var(--c1)', NV = 'var(--ink)', PAPER = 'var(--paper)', BG2 = 'var(--bg2)', TXT = 'var(--text)';
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`;
-const PAN = 520, CX = 540, CY0 = 480;
-function camCut(tl, C, L, cin, cout, last) {
-  const IN = .7, OUT = .6;
-  if (cin === 'zin') tl.fromTo(C, { scale: 1.22, x: 0 }, { scale: 1, duration: IN, ease: 'power3.out' }, 0);
-  else if (cin === 'zout') tl.fromTo(C, { scale: .8, x: 0 }, { scale: 1, duration: IN, ease: 'power3.out' }, 0);
-  else if (cin === 'panR' || cin === 'panL') tl.fromTo(C, { scale: 1, x: cin === 'panR' ? -PAN : PAN }, { x: 0, duration: IN, ease: 'power3.out' }, 0);
-  else tl.fromTo(C, { scale: 1.12, x: 0 }, { scale: 1, duration: .9, ease: 'power3.out' }, 0);
-  if (last) { tl.to(C, { scale: 1.05, duration: Math.max(.1, L - IN), ease: 'none' }, IN); return; }
-  if (cout === 'zin' || cout === 'zout') {
-    tl.to(C, { scale: cout === 'zin' ? 1.075 : .93, duration: Math.max(.1, L - OUT - IN), ease: 'none' }, IN);
-    tl.to(C, { scale: cout === 'zin' ? 1.22 : .8, duration: OUT, ease: 'power3.in' }, L - OUT);
-  } else {
-    const d = cout === 'panR' ? 1 : -1;
-    tl.to(C, { scale: 1.04, duration: Math.max(.1, L - OUT - IN), ease: 'none' }, IN);
-    tl.to(C, { x: PAN * d, duration: OUT, ease: 'power3.in' }, L - OUT);
+const PAN = 320, CX = 540, CY0 = 480;
+// Camada 1 (.cam): transição de entrada (~0,85 s, expo.out) e de saída (~0,7 s, expo.in), pico de velocidade no corte; no meio fica parada.
+// Zoom inverte no corte (sai em zin -> próxima nasce em 1,2 e volta a 1); pan continua a direção (sai para a direita -> próxima entra da esquerda).
+function camState(dir, enter) {
+  switch (dir) {
+    case 'zin': return { scale: 1.2, x: 0, y: 0 };
+    case 'zout': return { scale: .82, x: 0, y: 0 };
+    case 'panR': return { scale: 1, x: enter ? -PAN : PAN, y: 0 };
+    case 'panL': return { scale: 1, x: enter ? PAN : -PAN, y: 0 };
+    case 'panU': return { scale: 1, x: 0, y: enter ? PAN : -PAN };
+    case 'panD': return { scale: 1, x: 0, y: enter ? -PAN : PAN };
   }
+  return null;
+}
+function camCut(tl, C, L, cin, cout) {
+  const IN = Math.min(.85, L * .4), OUT = Math.min(.7, L * .35);
+  const a = camState(cin, true);
+  if (a) tl.fromTo(C, Object.assign({ filter: 'blur(10px)' }, a), { scale: 1, x: 0, y: 0, filter: 'blur(0px)', duration: IN, ease: 'expo.out' }, 0);
+  else if (cin !== 'none') tl.fromTo(C, { scale: 1.06, filter: 'blur(8px)' }, { scale: 1, filter: 'blur(0px)', duration: IN, ease: 'expo.out' }, 0);
+  const b = camState(cout, false);
+  if (b) {
+    tl.to(C, Object.assign({ duration: OUT, ease: 'expo.in' }, b), L - OUT);
+    tl.fromTo(C, { filter: 'blur(0px)' }, { filter: 'blur(10px)', duration: OUT * .45, ease: 'power2.in', immediateRender: false }, L - OUT * .45);
+  }
+}
+// Camada 2 (.sw): zoom do meio, ~13%, 0,8 s, power2.inOut, centrado. in: 0,87 -> 1 (termina no layout); out: 1 -> 0,88 (só tela larga)
+function midZoom(tl, el, L, dir) {
+  const d = Math.min(.8, L * .4), t = L / 2 - d / 2;
+  if (dir === 'in') { tl.set(el, { scale: .87 }, 0); tl.to(el, { scale: 1, duration: d, ease: 'power2.inOut' }, t); }
+  else { tl.set(el, { scale: 1 }, 0); tl.to(el, { scale: .88, duration: d, ease: 'power2.inOut' }, t); }
 }
 function focus(tl, foc, px, py, s, t, d = 1.1, ease = 'power2.inOut') {
   tl.to(foc, { scale: s, x: (CX - px) * s, y: (CY0 - py) * s, duration: d, ease }, t);
