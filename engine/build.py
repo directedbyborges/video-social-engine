@@ -49,6 +49,71 @@ def parse_caption(g):
     if "behind" in flags and y is None: y = 560
     return {"flags": flags, "y": y, "lines": lines}
 
+PAN = 320
+def build_shots(S, P, s2o, total):
+    """Tomadas do spec (tempo bruto) -> tempo de saída, encostadas umas nas outras; cenas finais depois da narração.
+    Transição de entrada = a de saída da tomada anterior (mesmo sentido); depois da máscara da marca, entra parada."""
+    out, mask = [], None
+    for i, sh in enumerate(S["shots"]):
+        d = dict(sh); d["start"] = out[-1]["end"] if out else 0.0
+        d["end"] = round(s2o(sh["end"]), 3) if i < len(S["shots"]) - 1 else round(total, 3)
+        if d.get("broll"):
+            b = dict(d["broll"]); b["file"] = os.path.normpath(os.path.join(P, b["file"]))
+            if d.get("zoom") == "out": b["scale"] = max(b.get("scale", 1.2), 1.18)   # zoom do meio para fora não pode mostrar borda
+            d["broll"] = b
+        if d.get("scene", {}).get("imgFile"): d["scene"] = dict(d["scene"], imgFile=os.path.normpath(os.path.join(P, d["scene"]["imgFile"])))
+        out.append(d)
+    for sc in S.get("end", {}).get("scenes", []):
+        st = out[-1]["end"]; sc = dict(sc)
+        out.append({"start": st, "end": round(st + sc.pop("dur", 2.5), 3), "panel": sc.pop("panel", "azul"), "scene": sc,
+                    "out": sc.pop("out", None), "zoom": sc.pop("zoom", None)})
+    for i, d in enumerate(out):
+        d["cout"] = d.pop("out", None) if i < len(out) - 1 else None
+        prev = out[i - 1]["cout"] if i else None
+        d["cin"] = d.get("in", prev if prev != "mask" else None)
+        if prev == "mask": d["afterMask"] = True; mask = d["start"]
+    return out, mask
+
+def camera(shots, END, fps=30):
+    """Câmera por quadro [escala, x, y]. Camada 1: transição (~1 s na entrada com SNAP-IN, ~1 s na saída com ACCEL-OUT,
+    pico de velocidade no corte). Camada 2: zoom do meio (13%, power2.inOut, centrado no meio livre da tomada)."""
+    eo = lambda x: 1 - 2 ** (-10 * x) if x < 1 else 1.0
+    ei = lambda x: 2 ** (10 * x - 10) if x > 0 else 0.0
+    io = lambda x: 2 * x * x if x < .5 else 1 - (-2 * x + 2) ** 2 / 2
+    cl = lambda x: max(0.0, min(1.0, x))
+    res = []
+    for k in range(int(round(END * fps)) + 1):
+        t = k / fps
+        sh = next((s for s in shots if s["start"] <= t < s["end"]), shots[-1])
+        L = sh["end"] - sh["start"]; u = t - sh["start"]
+        IN, OUT = min(.95, L * .42), min(.85, L * .38)
+        s, x, y = 1.0, 0.0, 0.0
+        cin, cout = sh.get("cin"), sh.get("cout")
+        if u < IN:
+            e = eo(u / IN)
+            if cin == "zin": s *= 1.2 - .2 * e
+            elif cin == "zout": s *= .86 + .14 * e
+            elif cin == "panR": x += PAN * (1 - e)
+            elif cin == "panL": x -= PAN * (1 - e)
+            elif cin == "panU": y += PAN * (1 - e)
+            elif cin == "panD": y -= PAN * (1 - e)
+            elif cin is None: s *= 1.06 - .06 * e          # primeira tomada / depois da máscara: assenta
+        if cout and cout != "mask" and u > L - OUT:
+            e = ei((u - (L - OUT)) / OUT)
+            if cout == "zin": s *= 1 + .2 * e
+            elif cout == "zout": s *= 1 - .14 * e
+            elif cout == "panR": x -= PAN * e
+            elif cout == "panL": x += PAN * e
+            elif cout == "panU": y -= PAN * e
+            elif cout == "panD": y += PAN * e
+        zm = sh.get("zoom")
+        if zm in ("in", "out"):
+            c = IN + max(0.0, L - IN - OUT) / 2; d = .8
+            v = io(cl((u - (c - d / 2)) / d))
+            s *= (.87 + .13 * v) if zm == "in" else (1 - .12 * v)
+        res.append([round(s, 4), round(x, 1), round(y, 1)])
+    return res
+
 def main(P):
     S = load_spec(P)
     B = json.load(open(S["brand"]))
@@ -81,11 +146,23 @@ def main(P):
             if ra > a: nv.append([a, ra])
             if rb < b: nv.append([rb, b])
         iv = nv
+    # cut.hold {tempo_bruto: s}: insere silêncio naquele ponto (numa pausa) para alongar uma cena curta
+    holds = sorted((float(k), v) for k, v in C.get("hold", {}).items())
+    for ht, hd in holds:
+        for i, (a, b) in enumerate(iv):
+            if a < ht < b: iv[i:i + 1] = [[a, ht], [ht, b]]; break
     cuts, o = [], 0
-    for a, b in iv: cuts.append({"a": round(a, 3), "b": round(b, 3), "o": round(o, 3)}); o += b - a
+    for a, b in iv:
+        for ht, hd in holds:
+            if abs(ht - a) < 1e-6 or (cuts and cuts[-1].get("b", -1) <= ht <= a and not any(c.get("hold") == ht for c in cuts)):
+                cuts.append({"a": round(ht, 3), "b": round(ht, 3), "o": round(o, 3), "sil": hd, "hold": ht}); o += hd
+        cuts.append({"a": round(a, 3), "b": round(b, 3), "o": round(o, 3)}); o += b - a
     total = o
     def s2o(t):
         for c in cuts:
+            if c.get("sil"):
+                if t < c["a"] or (t == c["a"] and False): return c["o"]
+                continue
             if t < c["a"]: return c["o"]
             if t <= c["b"]: return c["o"] + t - c["a"]
         return total
@@ -162,6 +239,12 @@ def main(P):
     else:
         emph = [{"at": round(s2o(e["at"]), 3), "amount": e.get("amount", .1), "dur": e.get("dur", 1.4)} for e in S.get("emphasis", [])]
     behind = [[g["t"], g["end"]] for g in groups if "behind" in g["flags"]]
+    # ---------- modo narrado por tomadas ----------
+    shots, cam, mask = [], None, None
+    if S.get("shots"):
+        shots, mask = build_shots(S, P, s2o, total)
+        gfx_end = shots[-1]["end"]; end = {"trans": None, "end": gfx_end, "card_start": gfx_end + 99}
+        cam = camera(shots, gfx_end)
     cap = B.get("captions", {})
     tl = {
         "src": S["src"], "brandFile": S["brand"], "total": round(total, 3), "srcDur": src_dur, "gfxEnd": round(gfx_end, 3),
@@ -173,11 +256,18 @@ def main(P):
         "captionY": dict({"full": cap.get("y_full", 1180), "split": cap.get("y_split", 960), "panel": cap.get("y_panel", 1640)}, **S.get("captionY", {})),
         "keyword": cap.get("keyword", "pill"), "panelDots": B.get("panel", {}).get("dots", True), "panelGlow": B.get("panel", {}).get("glow", .55),
         "music": music.resolve(S.get("music"), P, total, s2o), "sfx": S.get("sfx", {"auto": True}),
+        "palette": {k: B["colors"].get(k) for k in ("c1", "c2", "c3", "ink", "paper") if B["colors"].get(k)},
     }
+    if shots: tl.update(shots=shots, cam=cam, mask=mask, broll=[])
     json.dump(tl, open(P + "/timeline.json", "w"), ensure_ascii=False, indent=1)
     print(f"total {total:.2f}s (fim {end['end']:.2f}s) · cortes {len(cuts)} · palavras sem par {unmatched} · ênfases {len(emph)} · atrás {len(behind)}")
     for g in groups: print(f"  {g['t']:6.2f}-{g['end']:6.2f} {'@' + ','.join(g['flags']) if g['flags'] else ''}", " / ".join(" ".join(t["w"] for t in l["toks"]) for l in g["lines"]))
     for s in panels: print("  PAINEL", s["mode"], s["start"], s["end"], [(sc["type"], sc["t"]) for sc in s["scenes"]])
+    for i, s in enumerate(shots):
+        L = s["end"] - s["start"]
+        flag = "  <-- acima de 2,5 s" if L > 2.52 else ("  <-- abaixo de 1,3 s" if L < 1.3 else "")
+        src = os.path.basename(s["broll"]["file"]) if s.get("broll") else ("painel " + s.get("panel", "?"))
+        print(f"  TOMADA {i + 1:2d} {s['start']:6.2f}-{s['end']:6.2f} ({L:.2f}s) {s.get('cin') or '-':>5}->{s.get('cout') or '-':<5} {(s.get('scene') or {}).get('type', '-'):9s} {src}{flag}")
 
 if __name__ == "__main__":
     main(os.path.abspath(sys.argv[1]))

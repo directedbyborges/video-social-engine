@@ -130,11 +130,11 @@ function buildPanels(master) {
 }
 document.fonts.ready.then(() => {
   const master = gsap.timeline({ paused: true });
-  buildPanels(master);
+  if (TL.shots) buildShots(master); else buildPanels(master);
   buildCaptions(master);
   master.set({}, {}, TL.gfxEnd + .5);
   window.DURATION = TL.gfxEnd;
-  window.seek = t => { master.time(t + 0.0005, false); };
+  window.seek = t => { master.time(t + 0.0005, false); if (TL.shots) applyCam(t); };
   window.SFX = SFX;
   window.READY = true;
 });

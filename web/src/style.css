@@ -70,3 +70,38 @@ svg{overflow:visible}
 .ln.pl .kbg{position:absolute;inset:0;border-radius:inherit;background:var(--pill-bg,var(--c1));box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.35);transform-origin:50% 50%}
 .ln.pl .tk{position:relative}
 .glogo{height:86px;margin-bottom:18px;filter:drop-shadow(0 3px 12px rgba(0,0,0,.5))}
+/* ---------- modo narrado por tomadas (shots.js) ---------- */
+#world{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:540px 960px}
+.shot{position:absolute;inset:0;visibility:hidden}
+.pbg{position:absolute;left:-432px;top:-768px;width:1944px;height:3456px;overflow:hidden}
+.pbg.azul{background:var(--c1)}.pbg.branco{background:#fff}
+.pbg svg.arcs{position:absolute;left:0;top:0;width:100%;height:100%}
+.sw{position:absolute;inset:0;font-family:var(--font-body)}
+.blk{position:absolute;left:50%;background:var(--c1);color:#fff;padding:44px 60px 54px;display:flex;flex-direction:column;align-items:center;text-align:center;white-space:nowrap}
+.blk.w{background:#fff;color:var(--c1)}
+.bl,.tl{display:block;white-space:nowrap}
+.sw .sobre{font-weight:600;letter-spacing:.02em;text-transform:uppercase;line-height:1.1}
+.sw .r{font-weight:400;letter-spacing:-.02em;line-height:.98}
+.sw .b{font-weight:700;letter-spacing:-.03em;line-height:.95}
+.sw .wd{display:inline-block}.sw .wb{font-weight:700}.sw .ch{display:inline-block}
+.tg{position:absolute;left:90px;right:90px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.on-azul .tl{color:#fff}.on-branco .tl{color:var(--c1)}.on-foto .tl{color:#fff}
+.rot{position:relative;padding:22px 40px;font-weight:600;letter-spacing:-.02em;line-height:1;white-space:nowrap}
+.rot svg.rs{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.rot path{fill:none;stroke-width:5;stroke-linecap:round}
+.sucard{width:760px;background:#fff;padding:24px 48px 48px}
+.fld{text-align:left;margin-top:30px}.fl{font-weight:600;font-size:30px;color:var(--c2);letter-spacing:.04em;text-transform:uppercase}
+.fv{margin-top:10px;border:2px solid #D7D8D9;height:84px;display:flex;align-items:center;padding:0 24px;font-size:40px;color:#201D1D}
+.cur{display:inline-block;width:3px;height:44px;background:var(--c1);margin-left:4px}
+.ph{position:absolute;left:108px;right:108px;overflow:hidden}.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ltr{position:absolute;left:50%;text-align:left}
+.on-azul .ltr .tl{color:#fff}
+.btnw{position:relative;display:inline-block}
+.btn{position:relative;display:inline-flex;align-items:center;background:var(--c1);color:#fff;font-weight:700;font-size:96px;letter-spacing:-.01em;padding:62px 110px}
+.seta{width:66px;height:60px;margin-left:28px;overflow:visible}.seta path{fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.ring{position:absolute;width:220px;height:220px;pointer-events:none}.ring circle{fill:none;stroke:var(--c3);stroke-width:4}
+.subs{margin-top:150px}
+.cursor{position:absolute;left:0;top:0;width:130px;transform-origin:3px 3px}
+.cursor path{fill:#fff;stroke:var(--c1);stroke-width:4.5;stroke-linejoin:round}
+#mask{position:absolute;inset:0;overflow:hidden;visibility:hidden;z-index:90}
+#mask i{position:absolute;border-radius:50%}

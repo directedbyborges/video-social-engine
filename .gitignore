@@ -1,3 +1,23 @@
 web/node_modules/
 __pycache__/
 *.pyc
+# projetos: material do cliente e saídas pesadas ficam fora do repositório (público)
+projetos/*/magnific videos/
+projetos/*/brand/
+projetos/*/imagens/
+projetos/*/provisorio/
+projetos/*/trilha/
+projetos/*/_tmp/
+projetos/*/entrega/
+projetos/*/v*/g/
+projetos/*/v*/gb/
+projetos/*/v*/peek/
+projetos/*/v*/audit/
+projetos/*/v*/index.html
+projetos/*/v*/timeline.json
+projetos/*/v*/sfx_events.json
+projetos/*/v*/_filter.txt
+projetos/*/v*/_r*.log
+projetos/*/v*/_render.log
+projetos/*/v*/*.mp4
+projetos/_lote_musicas.json

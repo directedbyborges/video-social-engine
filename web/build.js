@@ -10,9 +10,10 @@ const mime = f => ({ '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/
 const dataURI = f => `data:${mime(f)};base64,${b64(f)}`;
 // ---------- fontes ----------
 function fontFaces() {
-  let css = '';
+  let css = ''; const seen = new Set();
   for (const [role, f] of Object.entries(B.fonts || {})) {
     if (f.file) {
+      if (seen.has(f.family + f.file + f.weight)) continue; seen.add(f.family + f.file + f.weight);
       const fp = path.resolve(BD, f.file), ext = path.extname(fp).slice(1).toLowerCase();
       const fmt = { ttf: 'truetype', otf: 'opentype', woff2: 'woff2', woff: 'woff' }[ext];
       css += `@font-face{font-family:'${f.family}';font-weight:${f.weight || 400};src:url(data:font/${ext};base64,${b64(fp)}) format('${fmt}')}\n`;
@@ -67,11 +68,21 @@ const IMG = {
   logo: dataURI(path.resolve(BD, B.files.logo)),
   symbol: dataURI(path.resolve(BD, B.files.symbol || B.files.logo)),
 };
+// todos os arquivos da marca viram IMG.<chave>; os SVG também ficam em SVGT.<chave> (texto) para animar peça por peça
+const SVGT = {};
+for (const [k, f] of Object.entries(B.files || {})) {
+  const fp = path.resolve(BD, f); if (!fs.existsSync(fp)) continue;
+  IMG[k] = dataURI(fp);
+  if (fp.toLowerCase().endsWith('.svg')) SVGT[k] = fs.readFileSync(fp, 'utf8').replace(/<\?xml.*?\?>/, '');
+}
+// imagens usadas pelas cenas das tomadas (ex.: foto em recorte reto)
+for (const s of TL.shots || []) if (s.scene && s.scene.imgFile) { const fp = path.resolve(P, s.scene.imgFile); s.scene.img = s.scene.img || path.basename(fp); IMG[s.scene.img] = dataURI(fp); }
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>${fontFaces()}\n${R('src/style.css')}\n${theme()}</style></head><body>
-<div id="stage"><div id="caps" class="caps"><div id="capsC" class="capsC"></div><div id="capsF" class="capsC"></div></div></div>
+<div id="stage"><div id="world"></div><div id="mask"></div><div id="caps" class="caps"><div id="capsC" class="capsC"></div><div id="capsF" class="capsC"></div></div></div>
 <script>${R('node_modules/gsap/dist/gsap.min.js')}</script>
+<script>${R('node_modules/gsap/dist/CustomEase.min.js')}</script>
 <script>${R('node_modules/roughjs/bundled/rough.js')}</script>
-<script>const TL=${JSON.stringify(TL)};const IMG=${JSON.stringify(IMG)};const ICONS=${JSON.stringify(icons())};</script>
-<script>${R('src/lib.js')}\n${R('src/scenes.js')}\n${R('src/main.js')}</script></body></html>`;
+<script>const TL=${JSON.stringify(TL)};const IMG=${JSON.stringify(IMG)};const ICONS=${JSON.stringify(icons())};const SVGT=${JSON.stringify(SVGT)};</script>
+<script>${R('src/lib.js')}\n${R('src/scenes.js')}\n${R('src/shots.js')}\n${R('src/main.js')}</script></body></html>`;
 fs.writeFileSync(P + '/index.html', html);
 console.log('built', P + '/index.html', (html.length / 1e6).toFixed(2) + 'MB');

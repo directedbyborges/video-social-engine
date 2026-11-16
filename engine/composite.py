@@ -115,12 +115,80 @@ def flash(frame, t):
                 frame = np.clip(frame.astype(np.float32) * (1 - .5 * grad) + col * grad * 1.1 + 60 * grad, 0, 255).astype(np.uint8)
     return frame
 
+# ---------- modo narrado por tomadas: b-roll por tomada (vídeo ou foto) + mesma câmera do layer gráfico ----------
+SHOTS = TL.get("shots")
+shot_src = {}
+def shot_at(t):
+    for s in SHOTS:
+        if s["start"] <= t < s["end"]: return s
+    return SHOTS[-1]
+def shot_broll(s, t):
+    b = s["broll"]; key = (b["file"], s["start"])
+    if key not in shot_src:
+        if b["file"].lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+            im = cv2.imread(b["file"], cv2.IMREAD_COLOR); shot_src[key] = {"img": im}
+        else:
+            cap = cv2.VideoCapture(b["file"]); cap.set(cv2.CAP_PROP_POS_MSEC, b.get("ss", 0) * 1000)
+            shot_src[key] = {"cap": cap, "fr": None, "n": -1, "fps": cap.get(cv2.CAP_PROP_FPS) or 30}
+    st = shot_src[key]
+    if "img" in st: fr = st["img"]
+    else:
+        want = int((t - s["start"]) * st["fps"] * b.get("speed", 1))
+        while st["n"] < want:
+            ok, f = st["cap"].read()
+            if not ok: break
+            st["fr"], st["n"] = f, st["n"] + 1
+        fr = st["fr"]
+    h, w = fr.shape[:2]
+    u = (t - s["start"]) / max(.1, s["end"] - s["start"])
+    sc = max(W / w, H / h) * b.get("scale", 1.2) * (1 + b.get("push", .05) * u)
+    fx, fy = b.get("focus", [.5, .5])
+    tx = min(0, max(W - w * sc, W / 2 - fx * w * sc)); ty = min(0, max(H - h * sc, H / 2 - fy * h * sc))
+    out = cv2.warpAffine(fr, np.float32([[sc, 0, tx], [0, sc, ty]]), (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT_101)
+    if b.get("dim"): out = (out.astype(np.float32) * (1 - b["dim"])).astype(np.uint8)
+    return out
+def light_grade(fr):
+    """Tratamento único para clipes de origens diferentes: contraste +6%, saturação +10%."""
+    f = fr.astype(np.float32); f = (f - 128) * 1.06 + 128
+    g = f.mean(axis=2, keepdims=True); f = g + (f - g) * 1.10
+    return np.clip(f, 0, 255).astype(np.uint8)
+def cam_warp(fr, c):
+    s, x, y = c
+    M = np.float32([[s, 0, W / 2 - W / 2 * s + x], [0, s, H / 2 - H / 2 * s + y]])
+    return cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT_101)
+def motion_blur(fr, c0, c1):
+    """Desfoque de movimento perto do corte, a partir da velocidade da câmera (pan = linear, zoom = radial)."""
+    dx, dy = c1[1] - c0[1], c1[2] - c0[2]; ds = c1[0] / max(1e-6, c0[0])
+    v = max(abs(dx), abs(dy))
+    if v > 3:
+        n = int(min(90, v * .9)) | 1; k = np.zeros((n, n), np.float32)
+        if abs(dx) >= abs(dy): k[n // 2, :] = 1
+        else: k[:, n // 2] = 1
+        fr = cv2.filter2D(fr, -1, k / n)
+    if abs(np.log(ds)) > .004:
+        acc = fr.astype(np.float32); m = 5
+        for i in range(1, m):
+            z = ds ** (-.9 * i / m)
+            M = np.float32([[z, 0, W / 2 - W / 2 * z], [0, z, H / 2 - H / 2 * z]])
+            acc += cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT_101)
+        fr = (acc / m).astype(np.uint8)
+    return fr
+
 out_v = f"{P}/{name}_video.mp4"
 enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
                         "-c:v", "libx264", "-preset", "medium", "-crf", "17", "-pix_fmt", "yuv420p", out_v], stdin=subprocess.PIPE)
 in_behind_prev = False
 for k in range(int(round(t0 * FPS)), int(round(t1 * FPS))):
     t = k / FPS
+    if SHOTS:
+        cams = TL["cam"]; c1 = cams[min(k, len(cams) - 1)]; c0 = cams[max(0, min(k - 1, len(cams) - 1))]
+        sh = shot_at(t)
+        frame = cam_warp(light_grade(shot_broll(sh, t)), c1) if sh.get("broll") else np.full((H, W, 3), BG, np.uint8)
+        gp = f"{P}/g/{min(k, gfx_last):05d}.png"
+        if os.path.exists(gp): frame = blend(frame, cv2.imread(gp, cv2.IMREAD_UNCHANGED))
+        frame = motion_blur(frame, c0, c1)
+        enc.stdin.write(np.ascontiguousarray(frame).tobytes())
+        continue
     if tf_cap is not None and t >= E["card_start"]:
         want = int((t - E["card_start"]) * 30)
         while tf_idx < want:
@@ -164,6 +232,7 @@ SFXD = ROOT + "/sfx"
 ev = json.load(open(P + "/sfx_events.json")) if os.path.exists(P + "/sfx_events.json") else []
 for f in TL["flashes"]: ev.append(["flash", f["at"]])
 for b in TL["broll"]: ev.append(["scene_cut", b["start"]])
+ev = [e for e in ev if not (SHOTS and e[0] == "scene_cut" and e[1] < .05)]
 if E.get("trans"): ev.append(["end_transition", E["trans_start"] + .1])
 if TL.get("music") and TL["music"].get("pivot") is not None: ev.append(["music_turn", TL["music"]["pivot"]])
 SP = TL.get("sfx") or {}
@@ -187,13 +256,15 @@ for e in ev:
 print("efeitos:", len(chosen))
 parts, inputs = [], ["-i", TL["src"]]
 for i, c in enumerate(TL["cuts"]):
+    if c.get("sil"):   # silêncio inserido (cut.hold)
+        parts.append(f"[0:a]atrim=0:{c['sil']:.3f},asetpts=PTS-STARTPTS,volume=0[v{i}]"); continue
     d = c["b"] - c["a"]
     parts.append(f"[0:a]atrim={c['a']:.3f}:{c['b']:.3f},asetpts=PTS-STARTPTS,afade=t=in:d=0.012,afade=t=out:st={d - .015:.3f}:d=0.015[v{i}]")
 n = len(TL["cuts"])
 if TL.get("tailAudio", True) and TL["srcDur"] - TL["cuts"][-1]["b"] > .05:
     ta = TL["cuts"][-1]["b"]
     parts.append(f"[0:a]atrim={ta:.3f}:{TL['srcDur']:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={max(0, TL['srcDur'] - ta - .12):.3f}:d=0.12[v{n}]"); n += 1
-parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1,aresample=48000,apad,atrim=0:{END:.3f},loudnorm=I=-15:TP=-2:LRA=11,aresample=48000[voice]")
+parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1,aresample=48000,apad,atrim=0:{END:.3f},acompressor=threshold=0.25:ratio=3:attack=10:release=150,loudnorm=I=-16:TP=-3:LRA=9,aresample=48000[voice]")
 mixl = ["[voice]"]
 for j, (f, start, gain, ln, skip) in enumerate(chosen):
     inputs += ["-i", f"{SFXD}/{f}.mp3"]; idx = inputs.count("-i") - 1
@@ -221,7 +292,7 @@ if M:
     parts.append("[voice]asplit=2[vmain][vsc]")
     parts.append("[mus][vsc]sidechaincompress=threshold=0.04:ratio=5:attack=25:release=350:makeup=1[musd]")
     mixl[0] = "[vmain]"; mixl.append("[musd]")
-parts.append("".join(mixl) + f"amix=inputs={len(mixl)}:normalize=0:dropout_transition=0,atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS,alimiter=limit=0.93[aout]")
+parts.append("".join(mixl) + f"amix=inputs={len(mixl)}:normalize=0:dropout_transition=0,atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS,loudnorm=I=-14:TP=-2.5:LRA=9,aresample=48000,alimiter=limit=0.75:level=false[aout]")
 fc = ";".join(parts)
 open(P + "/_filter.txt", "w").write(fc)
 final = f"{P}/{name}.mp4"
