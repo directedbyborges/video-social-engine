@@ -9,8 +9,11 @@ for i, s in enumerate(range(0, int(dur) + 1, 30)):
                     "fps=2,scale=200:-1,drawtext=text='%{pts\\:hms}':x=3:y=3:fontsize=13:fontcolor=white:box=1:boxcolor=black@0.7,tile=10x6",
                     "-frames:v", "1", f"{A}/folha_{i:02d}.png"])
 # quadros antes/depois de cada transição de painel e corte de cena
-TL = json.load(open(P + "/timeline.json"))
-ts = sorted({round(x, 2) for s in TL["panels"] for x in [s["start"], s["end"]] + [sc["t"] for sc in s["scenes"]]})
+if os.path.exists(P + "/timeline.json"):
+    TL = json.load(open(P + "/timeline.json"))
+    ts = sorted({round(x, 2) for s in TL["panels"] for x in [s["start"], s["end"]] + [sc["t"] for sc in s["scenes"]]})
+else:  # modo sequência: cortes entre cenas
+    ts = sorted({round(s["t1"], 2) for s in json.load(open(P + "/events.json"))["scenes"][:-1]})
 sel = "+".join(f"eq(n\\,{max(0, int(t * 30) + d)})" for t in ts for d in (-1, 1))
 if sel:
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", V, "-vf", f"select='{sel}',scale=180:-1,tile=8x{(len(ts) * 2 + 7) // 8}", "-frames:v", "1", "-vsync", "0", f"{A}/cortes.png"])
