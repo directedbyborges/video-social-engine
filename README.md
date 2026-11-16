@@ -14,3 +14,12 @@ Motor de edição de vídeo vertical (9:16) com motion para redes sociais e anú
 Uso: `./setup.sh` e depois `./vse.sh all <pasta_do_projeto>`. Ver `SKILL.md`.
 
 Licenças dos bancos de ícones: Tabler (MIT), Phosphor (MIT), Lucide (ISC), Iconoir (MIT), Fluent Emoji (MIT). RobustVideoMatting (GPL-3.0, usado como modelo baixado em tempo de execução).
+
+## Modo seq (vídeo narrado em sequência de cenas)
+
+Para vídeo narrado (TTS) em que cada cena é fundo + texto na mesma câmera: `SPEC["seq"]` com uma cena por trecho (≤ 2,5 s) e `"cut": {"keep_all": True}`.
+
+- Fundo: `{"clip": "clips/sNN", "still": "img/x.jpg", "src": ["magnific videos/*ID*"], "fx", "fy", "scale", "dim"}`, foto `{"img": ...}`, cor da marca `{"solid": "azul", "arcos": "azul"}` ou mosaico `{"imgs": [...]}`.
+- Tipos (`web/src/seq.js`): `txt` (faixa, solto, box 3D, ícone, número animado com `#`, traço de lettering, text label), `layers`, `selo`, `logo`, `photo`, `form`, `split`, `logoSign`, `cta`.
+- Câmera em duas camadas: transição de entrada/saída (`cout`: zin, zout, panR, panL, panU, panD, mask) e zoom do meio (`zoom`: in/out).
+- `python3 -I tools/clip_frames.py <proj>` extrai os quadros dos clipes (reenquadrados, sem cortes internos, chroma key opcional); `node tools/peek_seq.js <proj>` e `node tools/peek_times.js <proj> saida.jpg t1 t2 ...` conferem quadros sem renderizar; `tools/transcrever_narracao.py` transcreve com faster-whisper.

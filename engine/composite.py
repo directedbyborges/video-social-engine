@@ -146,6 +146,7 @@ for k in range(int(round(t0 * FPS)), int(round(t1 * FPS))):
                     frame = (frame.astype(np.float32) * a + behind.astype(np.float32) * (1 - a)).astype(np.uint8)
             in_behind_prev = ib
     gp = f"{P}/g/{min(k, gfx_last):05d}.png"
+    if not os.path.exists(gp) and os.path.exists(gp[:-4] + ".jpg"): gp = gp[:-4] + ".jpg"
     if os.path.exists(gp) and (t < TL["gfxEnd"] or E.get("card") is None or t < E["card_start"]):
         frame = blend(frame, cv2.imread(gp, cv2.IMREAD_UNCHANGED))
     if TR and t >= E["trans_start"]:
@@ -159,6 +160,10 @@ enc.stdin.close(); enc.wait()
 if dec: dec.kill()
 
 # ---------- áudio ----------
+# narração com pico em -3 dBFS (normalizada sozinha antes da mixagem)
+_vd = subprocess.run(["ffmpeg", "-i", TL["src"], "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
+_vmax = [float(l.split("max_volume:")[1].split()[0]) for l in _vd.splitlines() if "max_volume:" in l]
+VOICE_GAIN = f"volume={-3 - _vmax[0]:.2f}dB," if _vmax else "loudnorm=I=-15:TP=-2:LRA=11,"
 cat = json.load(open(ROOT + "/sfx/sfx.json"))
 SFXD = ROOT + "/sfx"
 ev = json.load(open(P + "/sfx_events.json")) if os.path.exists(P + "/sfx_events.json") else []
@@ -193,7 +198,7 @@ n = len(TL["cuts"])
 if TL.get("tailAudio", True) and TL["srcDur"] - TL["cuts"][-1]["b"] > .05:
     ta = TL["cuts"][-1]["b"]
     parts.append(f"[0:a]atrim={ta:.3f}:{TL['srcDur']:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={max(0, TL['srcDur'] - ta - .12):.3f}:d=0.12[v{n}]"); n += 1
-parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1,aresample=48000,apad,atrim=0:{END:.3f},loudnorm=I=-15:TP=-2:LRA=11,aresample=48000[voice]")
+parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1,aresample=48000,apad,atrim=0:{END:.3f},{VOICE_GAIN}aresample=48000[voice]")
 mixl = ["[voice]"]
 for j, (f, start, gain, ln, skip) in enumerate(chosen):
     inputs += ["-i", f"{SFXD}/{f}.mp3"]; idx = inputs.count("-i") - 1
@@ -221,7 +226,7 @@ if M:
     parts.append("[voice]asplit=2[vmain][vsc]")
     parts.append("[mus][vsc]sidechaincompress=threshold=0.04:ratio=5:attack=25:release=350:makeup=1[musd]")
     mixl[0] = "[vmain]"; mixl.append("[musd]")
-parts.append("".join(mixl) + f"amix=inputs={len(mixl)}:normalize=0:dropout_transition=0,atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS,alimiter=limit=0.93[aout]")
+parts.append("".join(mixl) + f"amix=inputs={len(mixl)}:normalize=0:dropout_transition=0,atrim={t0:.3f}:{t1:.3f},asetpts=PTS-STARTPTS,acompressor=threshold=0.08:ratio=3:attack=5:release=120:makeup=2,loudnorm=I=-14:TP=-2.6:LRA=7,aresample=48000,alimiter=limit=0.78:level=false[aout]")
 fc = ";".join(parts)
 open(P + "/_filter.txt", "w").write(fc)
 final = f"{P}/{name}.mp4"

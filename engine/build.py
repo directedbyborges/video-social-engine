@@ -67,6 +67,7 @@ def main(P):
     if C.get("end_at"): endt = C["end_at"]
     remove = C.get("remove", [])
     iv = []
+    if C.get("keep_all"): chunks = [{"s": PRE, "e": min(endt, src_dur) - POST}]
     for c in chunks:
         extra = [v for k, v in C.get("pad", {}).items() if abs(float(k) - c["e"]) < .2]
         a, b = max(0, c["s"] - PRE), c["e"] + (extra[0] if extra else POST)
@@ -147,6 +148,32 @@ def main(P):
         end["end"] = st + dur; gfx_end = st + dur
     else:
         end["end"] = total + max(.6, tail)
+    # ---------- sequência de cenas (modo seq: fundo + texto na mesma câmera) ----------
+    seq = []
+    if S.get("seq"):
+        seq = conv(S["seq"])
+        for sc in seq:
+            for k in ("bg", "bg2"):
+                b = sc.get(k)
+                if isinstance(b, dict):
+                    for f in ("img", "clip", "still"):
+                        if b.get(f) and not os.path.isabs(b[f]): b[f] = os.path.normpath(os.path.join(P, b[f]))
+                    if b.get("clip") and not os.path.exists(os.path.join(b["clip"], "0001.jpg")):
+                        b.pop("clip")   # quadros do clipe ainda não extraídos: usa a foto parada (still)
+                    elif b.get("clip"): b["n"] = len(glob.glob(os.path.join(b["clip"], "*.jpg")))
+                    if b.get("imgs"): b["imgs"] = [x if os.path.isabs(x) else os.path.normpath(os.path.join(P, x)) for x in b["imgs"]]
+        for sc in seq:
+            if sc.get("photo") and not os.path.isabs(sc["photo"]): sc["photo"] = os.path.normpath(os.path.join(P, sc["photo"]))
+        t_end = total
+        for i, sc in enumerate(seq):
+            if "dur" in sc and "t" not in sc: sc["t"] = round(seq[i - 1]["end"], 3)
+            nxt = seq[i + 1].get("t") if i + 1 < len(seq) else None
+            sc["end"] = round(sc["t"] + sc["dur"], 3) if "dur" in sc else round(nxt if nxt is not None else total, 3)
+        gfx_end = seq[-1]["end"]; end["end"] = gfx_end
+        print("SEQ", len(seq), "cenas ·", " ".join(f"{sc['end'] - sc['t']:.2f}" for sc in seq))
+        for i, sc in enumerate(seq):
+            d = sc["end"] - sc["t"]
+            if d > 2.55 or d < 1.3: print(f"  ATENÇÃO cena {i + 1}: {d:.2f}s")
     # ---------- zoom de ênfase (vai e volta) ----------
     def in_panel(t): return any(s["start"] - .2 <= t <= s["end"] + .2 for s in panels)
     emph = []
@@ -165,7 +192,7 @@ def main(P):
     cap = B.get("captions", {})
     tl = {
         "src": S["src"], "brandFile": S["brand"], "total": round(total, 3), "srcDur": src_dur, "gfxEnd": round(gfx_end, 3),
-        "cuts": cuts, "groups": groups, "panels": panels, "behind": behind, "emphasis": emph,
+        "cuts": cuts, "groups": groups, "panels": panels, "seq": seq, "behind": behind, "emphasis": emph,
         "flashes": [{"at": round(s2o(f["at"]), 3), "type": f.get("type", B.get("flash", "flash")), "dur": f.get("dur", .22)} for f in S.get("flash", [])],
         "broll": [dict(b, start=round(s2o(b["start"]), 3), end=round(s2o(b["end"]), 3), file=os.path.normpath(os.path.join(P, b["file"]))) for b in S.get("broll", [])],
         "end": end, "tailAudio": C.get("tail_audio", True), "grade": S.get("grade", B.get("grade", "natural")),

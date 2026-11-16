@@ -67,11 +67,17 @@ const IMG = {
   logo: dataURI(path.resolve(BD, B.files.logo)),
   symbol: dataURI(path.resolve(BD, B.files.symbol || B.files.logo)),
 };
-const html = `<!doctype html><html><head><meta charset="utf-8"><style>${fontFaces()}\n${R('src/style.css')}\n${theme()}</style></head><body>
+const SVGT = {};
+for (const [k, f] of Object.entries(B.files || {})) {
+  const fp = path.resolve(BD, f); if (!fs.existsSync(fp)) continue;
+  if (!IMG[k]) IMG[k] = dataURI(fp);
+  if (fp.toLowerCase().endsWith('.svg')) SVGT[k] = fs.readFileSync(fp, 'utf8').replace(/<\?xml.*?\?>/, '');
+}
+const html = `<!doctype html><html><head><meta charset="utf-8"><style>${fontFaces()}\n${R('src/style.css')}\n${R('src/seq.css')}\n${theme()}</style></head><body>
 <div id="stage"><div id="caps" class="caps"><div id="capsC" class="capsC"></div><div id="capsF" class="capsC"></div></div></div>
 <script>${R('node_modules/gsap/dist/gsap.min.js')}</script>
 <script>${R('node_modules/roughjs/bundled/rough.js')}</script>
-<script>const TL=${JSON.stringify(TL)};const IMG=${JSON.stringify(IMG)};const ICONS=${JSON.stringify(icons())};</script>
-<script>${R('src/lib.js')}\n${R('src/scenes.js')}\n${R('src/main.js')}</script></body></html>`;
+<script>const TL=${JSON.stringify(TL)};const IMG=${JSON.stringify(IMG)};const SVGT=${JSON.stringify(SVGT)};const ICONS=${JSON.stringify(icons())};</script>
+<script>${R('src/lib.js')}\n${R('src/scenes.js')}\n${R('src/seq.js')}\n${R('src/main.js')}</script></body></html>`;
 fs.writeFileSync(P + '/index.html', html);
 console.log('built', P + '/index.html', (html.length / 1e6).toFixed(2) + 'MB');

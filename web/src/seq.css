@@ -1,0 +1,47 @@
+/* Modo seq: cada cena = fundo (clipe, foto, cor da marca) + sobreposição, dentro da mesma câmera. */
+.sq{position:absolute;inset:0;visibility:hidden;overflow:hidden;background:var(--bg)}
+.sq .cam{position:absolute;inset:0;transform-origin:540px 960px}
+.sq .sw{position:absolute;inset:0;transform-origin:540px 960px}
+.sq .bgw{position:absolute;left:-81px;top:-144px;width:1242px;height:2208px;overflow:hidden;transform-origin:50% 50%}
+.sq .bgw img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.sq .dim{position:absolute;inset:-200px;background:#0c1420}
+.sq .ov{position:absolute;inset:0;transform-origin:540px 960px}
+.sq .solid{position:absolute;inset:-300px}
+.sq .arcos{position:absolute;right:0;bottom:0;width:1900px;height:1101px}
+.sq .arcos svg{width:100%;height:100%;display:block}
+.sq .half{position:absolute;left:0;width:1080px;height:960px;overflow:hidden}
+.sq .half img{width:100%;height:100%;object-fit:cover;display:block}
+.sq .divl{position:absolute;left:-200px;right:-200px;top:957px;height:6px}
+.g{position:absolute;left:540px;transform:translate(-50%,-50%);text-align:center;width:max-content;max-width:880px;white-space:nowrap}
+.g .r{display:block;line-height:.98;letter-spacing:-.03em}
+.g .r b{font-weight:700}
+.g .w{display:inline-block}
+.g .sob{font-weight:600;letter-spacing:.06em;text-transform:uppercase;line-height:1.1}
+.faixa{padding:38px 56px 46px}
+.lt{position:relative;display:inline-block}
+.lt svg.tr{position:absolute;overflow:visible}
+.lt svg.tr path{fill:none;stroke-width:7px;stroke-linecap:round}
+.rot{position:relative;display:inline-block;padding:22px 36px}
+.rot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.rot svg path{fill:none;stroke:currentColor;stroke-width:4px;stroke-linecap:round}
+.svgw svg{width:100%;height:auto;display:block;overflow:visible}
+.selo{width:300px;height:300px;margin:0 auto;position:relative}
+.selo svg.ring{position:absolute;inset:0;width:100%;height:100%}
+.selo .ic{position:absolute;left:65px;top:65px;width:170px;height:170px}
+.selo .ic svg{width:100%;height:100%}
+.btn{display:inline-flex;align-items:center;gap:30px;font-weight:700;font-size:84px;padding:52px 92px;letter-spacing:-.01em;position:relative}
+.btn .shine{position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);transform:translateX(-120%)}
+.btn svg path{fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.cur{position:absolute;width:118px;transform-origin:0 0}
+.cur path{stroke-width:7;stroke-linejoin:round}
+.wave{position:absolute;width:160px;height:160px;margin:-80px 0 0 -80px;border-radius:50%;border:5px solid}
+.lam{position:absolute;left:50%;width:560px;height:200px;margin-left:-280px;border:5px solid #fff}
+.mosaic{position:absolute;left:-200px;top:-200px;width:1480px;height:2320px;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr}
+.mosaic div{background-size:330% auto;background-position:8% 6%}
+.form{background:#fff;padding:56px 60px;width:760px;text-align:left}
+.form .fl{font-size:30px;margin-top:22px}
+.form .fv{height:62px;font-size:40px;padding-top:8px;position:relative}
+.form .fv .ul{position:absolute;left:0;right:0;bottom:0;height:3px}
+.form .fb{margin-top:44px;font-weight:700;font-size:40px;padding:26px 0;text-align:center;color:#fff}
+.mask{position:absolute;inset:0;pointer-events:none;visibility:hidden;overflow:hidden}
+.mask .d{position:absolute;border-radius:50%}
