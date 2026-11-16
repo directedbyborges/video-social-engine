@@ -45,8 +45,8 @@ SPEC = {
   # 9 — você vende o produto (imagem D)
   {"end": 17.85, "broll": {"file": "../imagens/D_entrega.jpg", "focus": [.5, .5], "scale": 1.06, "push": .04},
    "scene": {"type": "block", "y": 630, "lines": [["Você vende", "r", 88], ["o produto", "b", 106]]}, "out": "panR", "zoom": "in"},
-  # 10 — pedido pelo nome (amostra Uruguai com etiqueta — PROVISÓRIO até chegar a foto em alta)
-  {"end": 19.30, "broll": {"file": "../provisorio/amostra_etiqueta.jpg", "focus": [.5, .5], "scale": 1.1, "push": .08, "dim": .25},
+  # 10 — pedido pelo nome (amostra Uruguai preta em alta, enviada pelo usuário)
+  {"end": 19.30, "broll": {"file": "../imagens/uruguai_preto.jpg", "focus": [.42, .5], "scale": 1.15, "push": .1},
    "scene": {"type": "label", "y": 1080, "forma": "colchete", "px": 104, "text": "pedido pelo nome."}, "out": "zout", "zoom": "in"},
   # 11 — 55 variações (cartela real — PROVISÓRIO em baixa)
   {"end": 21.50, "broll": {"file": "../provisorio/cartela_uruguai.jpg", "focus": [.5, .45], "scale": 1.1, "push": .06},
