@@ -128,8 +128,40 @@ function buildPanels(master) {
     });
   });
 }
+// ---------- planos (vídeo narrado montado plano a plano) ----------
+const BGS = {
+  arcosAzul: () => `background:var(--c1) url(${IMG.arcos_azul}) right bottom/cover no-repeat`,
+  arcosBranco: () => `background:var(--paper) url(${IMG.arcos_branco}) right bottom/cover no-repeat`,
+  azul: () => 'background:var(--c1)', azul2: () => 'background:var(--bg2)', branco: () => 'background:var(--paper)',
+};
+function buildShots(master) {
+  const stage = document.getElementById('stage');
+  TL.shots.forEach((sh, i) => {
+    if (i > 0) SFX.push(['scene_cut', sh.start]);
+    const sc = sh.scene; if (!sc || LAYER === 'behind') return;
+    const L = sh.end - sh.start, sec = document.createElement('section'); sec.className = 'shot';
+    const bg = sc.bg && BGS[sc.bg] ? `<div class="bgL" style="${BGS[sc.bg]()}"></div>` : '';
+    sec.innerHTML = bg + `<div class="sw">${SB[sc.type].html(sc)}</div>`;
+    stage.appendChild(sec);
+    const sw = sec.querySelector('.sw'), tl = gsap.timeline();
+    SB[sc.type].build(tl, sw, sc, L);
+    // vida do fundo: os arcos da marca deslizam devagar (linear), ancorados no canto inferior direito
+    const bgL = sec.querySelector('.bgL');
+    if (bgL && /arcos/.test(sc.bg)) tl.fromTo(bgL, { scale: 1 }, { scale: 1.06, duration: L, ease: 'none', transformOrigin: '100% 100%' }, 0);
+    // zoom do meio (camada 2): rápido, ~13%, centrado no meio do plano; "in" termina no layout, "out" afasta do layout
+    const zm = Math.max(.35, L / 2 - .4);
+    if (sh.zoom === 'in') tl.fromTo(sw, { scale: .87 }, { scale: 1, duration: .8, ease: 'power2.inOut' }, zm);
+    else if (sh.zoom === 'out') tl.fromTo(sw, { scale: 1 }, { scale: .88, duration: .8, ease: 'power2.inOut', immediateRender: false }, zm);
+    tl.set({}, {}, L);
+    master.set(sec, { visibility: 'visible' }, sh.start);
+    master.add(tl, sh.start);
+    master.set(sec, { visibility: 'hidden' }, sh.end);
+    if (SB[sc.type].sfx) SB[sc.type].sfx(sc, L).forEach(e => { if (e[1] != null && !isNaN(e[1])) SFX.push([e[0], sh.start + e[1]].concat(e[2] != null ? [sh.start + e[2]] : [])); });
+  });
+}
 document.fonts.ready.then(() => {
   const master = gsap.timeline({ paused: true });
+  if (TL.shots && TL.shots.length) buildShots(master);
   buildPanels(master);
   buildCaptions(master);
   master.set({}, {}, TL.gfxEnd + .5);

@@ -67,7 +67,11 @@ def main(P):
     if C.get("end_at"): endt = C["end_at"]
     remove = C.get("remove", [])
     iv = []
-    for c in chunks:
+    if C.get("keep_all"):   # vídeo narrado (TTS): mantém a narração inteira, sem cortar pausas
+        chunks_iter = []; iv = [[0.0, min(endt, src_dur)]]
+    else:
+        chunks_iter = chunks
+    for c in chunks_iter:
         extra = [v for k, v in C.get("pad", {}).items() if abs(float(k) - c["e"]) < .2]
         a, b = max(0, c["s"] - PRE), c["e"] + (extra[0] if extra else POST)
         if a >= endt: break
@@ -125,6 +129,22 @@ def main(P):
             nb = min(bounds, key=lambda b: abs(b - s[k]))
             if abs(nb - s[k]) < .35: s[k] = round(nb, 3)
         for i, sc in enumerate(s["scenes"]): sc["end"] = s["scenes"][i + 1]["t"] if i + 1 < len(s["scenes"]) else s["end"]
+    # ---------- planos (shots): vídeo narrado montado plano a plano ----------
+    # cada plano: t (início, tempo bruto) ou after+dur; cin/cout (transição de câmera); zoom (in|out, zoom do meio);
+    # broll {file, ss, focus, scale, zoom, dim, grade}; scene {type, bg, ...} (tempos da cena relativos ao início do plano)
+    shots = []
+    for i, sh in enumerate(S.get("shots", [])):
+        sh = dict(sh)
+        if "t" in sh: st = s2o(sh["t"])
+        else: st = shots[-1]["end"] if shots else 0.0
+        sh["start"] = round(st, 3)
+        if shots and "end" not in shots[-1]: shots[-1]["end"] = sh["start"]
+        if "dur" in sh: sh["end"] = round(st + sh["dur"], 3)
+        if sh.get("broll") and sh["broll"].get("file"): sh["broll"] = dict(sh["broll"], file=os.path.normpath(os.path.join(P, sh["broll"]["file"])))
+        shots.append(sh)
+    for i, sh in enumerate(shots):
+        if "end" not in sh: sh["end"] = round(total if i == len(shots) - 1 else shots[i + 1]["start"], 3)
+        if i > 0 and not sh.get("cin"): sh["cin"] = shots[i - 1].get("cout")
     # ---------- final (transição da marca + card) ----------
     E = S.get("end", {}); end = {"trans": None}; gfx_end = total
     tail = src_dur - (cuts[-1]["b"] if cuts else 0) if C.get("tail_audio", True) else 0
@@ -145,6 +165,8 @@ def main(P):
         cs.update(t=st, end=st + dur)
         panels.append({"mode": "full", "start": st, "end": st + dur, "hold": True, "scenes": [cs]})
         end["end"] = st + dur; gfx_end = st + dur
+    elif shots:
+        end["end"] = max(total, shots[-1]["end"]); gfx_end = end["end"]
     else:
         end["end"] = total + max(.6, tail)
     # ---------- zoom de ênfase (vai e volta) ----------
@@ -168,6 +190,7 @@ def main(P):
         "cuts": cuts, "groups": groups, "panels": panels, "behind": behind, "emphasis": emph,
         "flashes": [{"at": round(s2o(f["at"]), 3), "type": f.get("type", B.get("flash", "flash")), "dur": f.get("dur", .22)} for f in S.get("flash", [])],
         "broll": [dict(b, start=round(s2o(b["start"]), 3), end=round(s2o(b["end"]), 3), file=os.path.normpath(os.path.join(P, b["file"]))) for b in S.get("broll", [])],
+        "shots": shots, "voice": S.get("voice", {}),
         "end": end, "tailAudio": C.get("tail_audio", True), "grade": S.get("grade", B.get("grade", "natural")),
         "zoom": dict({"jump": [1.0, 1.13, 1.04, 1.17], "anchor_y": 760, "split_ty": 480}, **S.get("zoom", {})),
         "captionY": dict({"full": cap.get("y_full", 1180), "split": cap.get("y_split", 960), "panel": cap.get("y_panel", 1640)}, **S.get("captionY", {})),
@@ -178,6 +201,10 @@ def main(P):
     print(f"total {total:.2f}s (fim {end['end']:.2f}s) · cortes {len(cuts)} · palavras sem par {unmatched} · ênfases {len(emph)} · atrás {len(behind)}")
     for g in groups: print(f"  {g['t']:6.2f}-{g['end']:6.2f} {'@' + ','.join(g['flags']) if g['flags'] else ''}", " / ".join(" ".join(t["w"] for t in l["toks"]) for l in g["lines"]))
     for s in panels: print("  PAINEL", s["mode"], s["start"], s["end"], [(sc["type"], sc["t"]) for sc in s["scenes"]])
+    for i, sh in enumerate(shots):
+        d = sh["end"] - sh["start"]; flag = "  <-- LONGA" if d > 2.5 + 1e-3 else ("  <-- CURTA" if d < 1.3 else "")
+        print(f"  PLANO {i + 1:02d} {sh['start']:6.2f}-{sh['end']:6.2f} ({d:.2f}s) {sh.get('cin') or '-':>5}>{sh.get('cout') or '-':<5} "
+              f"{(sh.get('scene') or {}).get('type', '-'):<12} {os.path.basename((sh.get('broll') or {}).get('file', '')) }{flag}")
 
 if __name__ == "__main__":
     main(os.path.abspath(sys.argv[1]))

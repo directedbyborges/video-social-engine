@@ -70,3 +70,41 @@ svg{overflow:visible}
 .ln.pl .kbg{position:absolute;inset:0;border-radius:inherit;background:var(--pill-bg,var(--c1));box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.35);transform-origin:50% 50%}
 .ln.pl .tk{position:relative}
 .glogo{height:86px;margin-bottom:18px;filter:drop-shadow(0 3px 12px rgba(0,0,0,.5))}
+/* ---------- modo shots (vídeo narrado plano a plano) ---------- */
+.shot{position:absolute;inset:0;visibility:hidden;overflow:hidden}
+.shot .bgL{position:absolute;inset:0}
+.shot .sw{position:absolute;inset:0;transform-origin:540px 920px}
+.shot .zone{position:absolute;left:108px;right:108px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:var(--font-head);color:var(--paper)}
+.shot .ln2{line-height:1.0;letter-spacing:-.025em;font-weight:400;white-space:nowrap}
+.shot .ln2 b,.shot .lbl2 b{font-weight:700}
+.shot .big2{font-weight:700;letter-spacing:-.04em;line-height:.92}
+.shot .bx{background:var(--c1);color:var(--paper);padding:32px 56px 38px;max-width:864px;display:flex;flex-direction:column;align-items:center}
+.shot .wd{display:inline-block}
+.shot .lt{display:inline-block}
+.shot .mask{position:absolute;inset:0;pointer-events:none}
+.shot .mask i{position:absolute;border-radius:50%;transform:scale(0)}
+.shot .seal{position:relative;width:300px;height:300px;display:grid;place-items:center}
+.shot .seal .ring{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.shot .ic2{width:190px;height:190px}
+.shot .pp{position:relative;display:grid;place-items:center}
+.shot .pit{grid-area:1/1;display:flex;flex-direction:column;align-items:center}
+.shot .card2{width:640px;height:640px;object-fit:cover;display:block}
+.shot .lbl2{position:relative;display:inline-block;font-weight:600;font-size:60px;letter-spacing:-.02em;padding:0 6px 24px;margin-top:30px;white-space:nowrap}
+.shot .rn{position:relative;width:440px;height:440px;display:grid;place-items:center;margin-bottom:44px}
+.shot .strips{position:absolute;inset:0;display:flex}
+.shot .stp{flex:1;background-size:cover;background-position:center}
+.shot .dim2{position:absolute;inset:0;background:rgba(16,24,38,.3)}
+.shot .lt2{display:flex;flex-direction:column;align-items:inherit}
+.shot .frm{background:var(--paper);width:720px;padding:46px 56px 30px;margin-top:44px;text-align:left}
+.shot .fld{margin-bottom:26px}
+.shot .fl{font-size:30px;font-weight:600;color:var(--bg2);letter-spacing:.02em;text-transform:uppercase}
+.shot .fv{font-size:46px;color:var(--ink);border-bottom:3px solid #D7D8D9;padding:4px 0 10px;min-height:68px;position:relative}
+.shot .fv .caret{display:inline-block;width:3px;height:44px;background:var(--c1);vertical-align:-6px;margin-left:2px;opacity:0}
+.shot .ok{width:84px;height:84px;background:var(--c1);display:grid;place-items:center}
+.shot .grd{display:grid;grid-template-columns:repeat(3,248px);gap:12px;margin-top:46px}
+.shot .gt{width:248px;height:248px;overflow:hidden}
+.shot .btn2{position:relative;overflow:hidden;background:var(--c1);color:var(--paper);font-weight:700;font-size:84px;letter-spacing:-.02em;width:700px;height:190px;display:flex;align-items:center;justify-content:center}
+.shot .btn2 .shine{position:absolute;top:0;left:0;width:30%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-120%)}
+.shot .btn2 .wave{position:absolute;left:469px;top:9px;width:260px;height:260px;border-radius:50%;border:4px solid var(--paper);opacity:0}
+.shot .sub2{margin-top:64px}
+.shot .cur{position:absolute;width:150px;height:188px;left:calc(50% + 230px);top:calc(50% - 60px)}

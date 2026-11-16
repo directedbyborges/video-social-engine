@@ -34,7 +34,7 @@ function theme() {
   const fam = r => F[r] ? `'${F[r].family}'` : "'Poppins'";
   const v = {
     '--c1': c.c1, '--c2': c.c2 || c.ink, '--ink': c.ink || c.c2, '--paper': c.paper || '#fff', '--bg': c.bg || c.c2, '--bg2': c.bg2 || c.c2,
-    '--text': c.text || '#fff', '--font-head': fam('head'), '--font-body': fam('body'), '--font-hand': fam('hand'),
+    '--text': c.text || '#fff', '--stroke': c.stroke || c.c1, '--font-head': fam('head'), '--font-body': fam('body'), '--font-hand': fam('hand'),
     '--radius': (B.shape?.radius ?? 40) + 'px', '--pill-radius': (B.shape?.pill_radius ?? 999) + 'px',
     '--cap-size': (cap.size || 58) + 'px', '--cap-weight': cap.weight || 700, '--cap-track': (cap.tracking ?? -.025) + 'em',
     '--cap-case': cap.case || 'none', '--cap-font': cap.font ? `var(--font-${cap.font})` : 'var(--font-body)',
@@ -67,11 +67,25 @@ const IMG = {
   logo: dataURI(path.resolve(BD, B.files.logo)),
   symbol: dataURI(path.resolve(BD, B.files.symbol || B.files.logo)),
 };
+// todos os arquivos da marca: IMG.<chave> (data URI) e, para SVG, SVGT.<chave> (texto, para animar peça por peça)
+const SVGT = {};
+for (const [k, f] of Object.entries(B.files || {})) {
+  const fp = path.resolve(BD, f); if (!fs.existsSync(fp)) continue;
+  IMG[k] = dataURI(fp);
+  if (fp.toLowerCase().endsWith('.svg')) SVGT[k] = fs.readFileSync(fp, 'utf8').replace(/<\?xml.*?\?>/, '').replace(/\s(width|height)="[^"]*"/g, '');
+}
+// imagens citadas nas cenas dos planos (caminhos relativos ao projeto) -> ASSET[caminho]
+const ASSET = {};
+const walkA = x => {
+  if (typeof x === 'string' && /\.(png|jpe?g|webp|svg)$/i.test(x) && !path.isAbsolute(x) && fs.existsSync(path.join(P, x))) ASSET[x] = dataURI(path.join(P, x));
+  else if (Array.isArray(x)) x.forEach(walkA); else if (x && typeof x === 'object') Object.values(x).forEach(walkA);
+};
+(TL.shots || []).forEach(sh => walkA(sh.scene));
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>${fontFaces()}\n${R('src/style.css')}\n${theme()}</style></head><body>
 <div id="stage"><div id="caps" class="caps"><div id="capsC" class="capsC"></div><div id="capsF" class="capsC"></div></div></div>
 <script>${R('node_modules/gsap/dist/gsap.min.js')}</script>
 <script>${R('node_modules/roughjs/bundled/rough.js')}</script>
-<script>const TL=${JSON.stringify(TL)};const IMG=${JSON.stringify(IMG)};const ICONS=${JSON.stringify(icons())};</script>
-<script>${R('src/lib.js')}\n${R('src/scenes.js')}\n${R('src/main.js')}</script></body></html>`;
+<script>const TL=${JSON.stringify(TL)};const IMG=${JSON.stringify(IMG)};const ICONS=${JSON.stringify(icons())};const SVGT=${JSON.stringify(SVGT)};const ASSET=${JSON.stringify(ASSET)};</script>
+<script>${R('src/lib.js')}\n${R('src/scenes.js')}\n${R('src/scenes_shots.js')}\n${R('src/main.js')}</script></body></html>`;
 fs.writeFileSync(P + '/index.html', html);
 console.log('built', P + '/index.html', (html.length / 1e6).toFixed(2) + 'MB');

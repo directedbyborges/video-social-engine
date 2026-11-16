@@ -116,47 +116,51 @@ def flash(frame, t):
     return frame
 
 out_v = f"{P}/{name}_video.mp4"
-enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-                        "-c:v", "libx264", "-preset", "medium", "-crf", "17", "-pix_fmt", "yuv420p", out_v], stdin=subprocess.PIPE)
-in_behind_prev = False
-for k in range(int(round(t0 * FPS)), int(round(t1 * FPS))):
-    t = k / FPS
-    if tf_cap is not None and t >= E["card_start"]:
-        want = int((t - E["card_start"]) * 30)
-        while tf_idx < want:
-            ok, fr = tf_cap.read()
-            if not ok: break
-            tf_frame, tf_idx = fr, tf_idx + 1
-        frame = tf_frame.copy()
-    else:
-        s, tx, ty, c = transform(min(t, total - 1 / FPS))
-        st = c["a"] + (t - c["o"])   # depois do fim a fala continua rolando por baixo da transição
-        src = src_frame(int(round(st * 30)))
-        frame = cv2.warpAffine(src, np.float32([[s, 0, tx], [0, s, ty]]), (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=BG)
-        br = [b for b in TL["broll"] if b["start"] <= t < b["end"]]
-        if br: frame = broll_frame(br[0], t)
-        if matter is not None:
-            ib = in_ranges(t, TL["behind"])
-            if ib:
-                if not in_behind_prev: matter.reset(); [matter(frame) for _ in range(3)]
-                gbp = f"{P}/gb/{k:05d}.png"
-                if os.path.exists(gbp):
-                    a = matter(frame)[:, :, None]
-                    behind = blend(frame, cv2.imread(gbp, cv2.IMREAD_UNCHANGED))
-                    frame = (frame.astype(np.float32) * a + behind.astype(np.float32) * (1 - a)).astype(np.uint8)
-            in_behind_prev = ib
-    gp = f"{P}/g/{min(k, gfx_last):05d}.png"
-    if os.path.exists(gp) and (t < TL["gfxEnd"] or E.get("card") is None or t < E["card_start"]):
-        frame = blend(frame, cv2.imread(gp, cv2.IMREAD_UNCHANGED))
-    if TR and t >= E["trans_start"]:
-        ti = int((t - E["trans_start"]) * E["trans_fps"])
-        if ti < len(TR):
-            if ti not in tr_cache: tr_cache = {ti: cv2.imread(TR[ti], cv2.IMREAD_UNCHANGED)}
-            frame = blend(frame, tr_cache[ti])
-    frame = flash(frame, t)
-    enc.stdin.write(np.ascontiguousarray(frame).tobytes())
-enc.stdin.close(); enc.wait()
-if dec: dec.kill()
+if TL.get("shots"):
+    import shots as SHOTS
+    SHOTS.render(TL, P, t0, t1, out_v, FPS, W, H, BG)
+else:
+    enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
+                            "-c:v", "libx264", "-preset", "medium", "-crf", "17", "-pix_fmt", "yuv420p", out_v], stdin=subprocess.PIPE)
+    in_behind_prev = False
+    for k in range(int(round(t0 * FPS)), int(round(t1 * FPS))):
+        t = k / FPS
+        if tf_cap is not None and t >= E["card_start"]:
+            want = int((t - E["card_start"]) * 30)
+            while tf_idx < want:
+                ok, fr = tf_cap.read()
+                if not ok: break
+                tf_frame, tf_idx = fr, tf_idx + 1
+            frame = tf_frame.copy()
+        else:
+            s, tx, ty, c = transform(min(t, total - 1 / FPS))
+            st = c["a"] + (t - c["o"])   # depois do fim a fala continua rolando por baixo da transição
+            src = src_frame(int(round(st * 30)))
+            frame = cv2.warpAffine(src, np.float32([[s, 0, tx], [0, s, ty]]), (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=BG)
+            br = [b for b in TL["broll"] if b["start"] <= t < b["end"]]
+            if br: frame = broll_frame(br[0], t)
+            if matter is not None:
+                ib = in_ranges(t, TL["behind"])
+                if ib:
+                    if not in_behind_prev: matter.reset(); [matter(frame) for _ in range(3)]
+                    gbp = f"{P}/gb/{k:05d}.png"
+                    if os.path.exists(gbp):
+                        a = matter(frame)[:, :, None]
+                        behind = blend(frame, cv2.imread(gbp, cv2.IMREAD_UNCHANGED))
+                        frame = (frame.astype(np.float32) * a + behind.astype(np.float32) * (1 - a)).astype(np.uint8)
+                in_behind_prev = ib
+        gp = f"{P}/g/{min(k, gfx_last):05d}.png"
+        if os.path.exists(gp) and (t < TL["gfxEnd"] or E.get("card") is None or t < E["card_start"]):
+            frame = blend(frame, cv2.imread(gp, cv2.IMREAD_UNCHANGED))
+        if TR and t >= E["trans_start"]:
+            ti = int((t - E["trans_start"]) * E["trans_fps"])
+            if ti < len(TR):
+                if ti not in tr_cache: tr_cache = {ti: cv2.imread(TR[ti], cv2.IMREAD_UNCHANGED)}
+                frame = blend(frame, tr_cache[ti])
+        frame = flash(frame, t)
+        enc.stdin.write(np.ascontiguousarray(frame).tobytes())
+    enc.stdin.close(); enc.wait()
+    if dec: dec.kill()
 
 # ---------- áudio ----------
 cat = json.load(open(ROOT + "/sfx/sfx.json"))
@@ -193,7 +197,17 @@ n = len(TL["cuts"])
 if TL.get("tailAudio", True) and TL["srcDur"] - TL["cuts"][-1]["b"] > .05:
     ta = TL["cuts"][-1]["b"]
     parts.append(f"[0:a]atrim={ta:.3f}:{TL['srcDur']:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={max(0, TL['srcDur'] - ta - .12):.3f}:d=0.12[v{n}]"); n += 1
-parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1,aresample=48000,apad,atrim=0:{END:.3f},loudnorm=I=-15:TP=-2:LRA=11,aresample=48000[voice]")
+VO = TL.get("voice") or {}
+if TL.get("shots"):
+    comp = "acompressor=threshold=0.1:ratio=3:attack=10:release=160:makeup=1"
+    st = subprocess.run(["ffmpeg", "-i", TL["src"], "-af", comp + ",astats=metadata=0:measure_overall=Peak_level:measure_perchannel=0", "-f", "null", "-"], capture_output=True, text=True).stderr
+    pk = [float(l.split(":")[-1]) for l in st.splitlines() if "Peak level dB" in l]
+    vg = VO.get("peak", -3.0) - (pk[-1] if pk else -3.0)
+    print(f"voz: pico {pk[-1] if pk else 0:.2f} dBFS -> ganho {vg:+.2f} dB (pico {VO.get('peak', -3.0)} dBFS)")
+    vchain = f"{comp},volume={vg:.2f}dB"
+else:
+    vchain = "loudnorm=I=-15:TP=-2:LRA=11"
+parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1,aresample=48000,apad,atrim=0:{END:.3f},{vchain},aresample=48000[voice]")
 mixl = ["[voice]"]
 for j, (f, start, gain, ln, skip) in enumerate(chosen):
     inputs += ["-i", f"{SFXD}/{f}.mp3"]; idx = inputs.count("-i") - 1
@@ -225,6 +239,23 @@ parts.append("".join(mixl) + f"amix=inputs={len(mixl)}:normalize=0:dropout_trans
 fc = ";".join(parts)
 open(P + "/_filter.txt", "w").write(fc)
 final = f"{P}/{name}.mp4"
-subprocess.run(["ffmpeg", "-v", "error", "-y"] + inputs + ["-i", out_v, "-filter_complex_script", P + "/_filter.txt",
-                "-map", f"{inputs.count('-i')}:v", "-map", "[aout]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", final], check=True)
+mixw = P + "/_mix.wav"
+subprocess.run(["ffmpeg", "-v", "error", "-y"] + inputs + ["-filter_complex_script", P + "/_filter.txt", "-map", "[aout]", "-c:a", "pcm_s24le", mixw], check=True)
+# master: loudness integrado ~ -14 LUFS e pico real entre -3 e -2 dBTP (ganho linear + limitador com folga)
+def loud(f):
+    e = subprocess.run(["ffmpeg", "-i", f, "-af", "ebur128=peak=true", "-f", "null", "-"], capture_output=True, text=True).stderr.splitlines()
+    I = [float(l.split()[1]) for l in e if l.strip().startswith("I:")]; T = [float(l.split()[1]) for l in e if l.strip().startswith("Peak:")]
+    return (I[-1] if I else -14.0), (T[-1] if T else -2.0)
+I0, T0 = loud(mixw); tgt = TL.get("loudness", {"I": -14.0, "TP": -2.4})
+g, tp = tgt["I"] - I0, tgt["TP"] - .5
+for it in range(4):   # ajusta ganho e teto até o loudness ficar em ±0,5 LU e o pico real ≤ alvo (medido no AAC final)
+    af = f"volume={g:.2f}dB,alimiter=limit={10 ** (tp / 20):.4f}:attack=2:release=80:level=false"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", mixw, "-i", out_v, "-af", af, "-map", "1:v", "-map", "0:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                    "-shortest", "-movflags", "+faststart", final], check=True)
+    I1, T1 = loud(final)
+    ok_i, ok_t = abs(I1 - tgt["I"]) <= .5, T1 <= tgt["TP"] + .3
+    if ok_i and ok_t: break
+    if not ok_t: tp -= (T1 - tgt["TP"]) + .1
+    if not ok_i: g += tgt["I"] - I1
+print(f"master: {I0:.1f} LUFS -> {I1:.1f} LUFS · pico real {T1:.1f} dBTP")
 print("ok:", final, f"{t1 - t0:.2f}s")
