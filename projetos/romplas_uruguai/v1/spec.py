@@ -48,8 +48,8 @@ SPEC = {
   # 10 — pedido pelo nome (amostra Uruguai preta em alta, enviada pelo usuário)
   {"end": 19.30, "broll": {"file": "../imagens/uruguai_preto.jpg", "focus": [.42, .5], "scale": 1.15, "push": .1},
    "scene": {"type": "label", "y": 1080, "forma": "colchete", "px": 104, "text": "pedido pelo nome."}, "out": "zout", "zoom": "in"},
-  # 11 — 55 variações (cartela real — PROVISÓRIO em baixa)
-  {"end": 21.50, "broll": {"file": "../provisorio/cartela_uruguai.jpg", "focus": [.5, .45], "scale": 1.1, "push": .06},
+  # 11 — 55 variações (recorte fechado nos rolos coloridos da imagem C; o usuário não tem as fotos das cores)
+  {"end": 21.50, "broll": {"file": "../imagens/C_prateleira.jpg", "focus": [.6, .62], "scale": 1.75, "push": .06},
    "scene": {"type": "block", "y": 760, "count": {"line": 0, "to": 55, "at": .3, "dur": 1.0},
              "lines": [["55", "b", 264], ["variações de cores.", "r", 70]]}, "out": "panL", "zoom": "out"},
   # 12 — direto da fábrica
@@ -87,5 +87,6 @@ SPEC = {
   {"type": "logoSign", "dur": 2.3, "panel": AZ, "y": 820, "out": "zin"},
   {"type": "cta", "dur": 2.5, "panel": BR_, "y": 740, "cta": "Saiba mais", "sub": ["e cadastre sua loja."], "clickAt": 1.4},
  ]},
+ "music": {"file": "../trilha/groove_lyria.mp3", "ss": 8.2, "pivot": 14.10, "level": -27},
  "sfx": {"auto": True, "gain": -3},
 }

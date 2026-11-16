@@ -183,7 +183,8 @@ for k in range(int(round(t0 * FPS)), int(round(t1 * FPS))):
     if SHOTS:
         cams = TL["cam"]; c1 = cams[min(k, len(cams) - 1)]; c0 = cams[max(0, min(k - 1, len(cams) - 1))]
         sh = shot_at(t)
-        frame = cam_warp(light_grade(shot_broll(sh, t)), c1) if sh.get("broll") else np.full((H, W, 3), BG, np.uint8)
+        # o b-roll acompanha pan e zoom para dentro, mas nunca encolhe abaixo da tela (zoom para fora só no layer gráfico)
+        frame = cam_warp(light_grade(shot_broll(sh, t)), [max(1.0, c1[0])] + c1[1:]) if sh.get("broll") else np.full((H, W, 3), BG, np.uint8)
         gp = f"{P}/g/{min(k, gfx_last):05d}.png"
         if os.path.exists(gp): frame = blend(frame, cv2.imread(gp, cv2.IMREAD_UNCHANGED))
         frame = motion_blur(frame, c0, c1)
@@ -278,7 +279,7 @@ if M:
     pv = M["pivot"] if M.get("pivot") is not None else END * .4
     xf = M.get("xfade", 1.6); gi, gm = M.get("gains", [-20, -20])
     def track(path, lab, extra=""):
-        inputs.extend(["-stream_loop", "-1", "-i", path]); ix = inputs.count("-i") - 1
+        inputs.extend(["-stream_loop", "-1"] + (["-ss", f"{M['ss']:.3f}"] if M.get("ss") else []) + ["-i", path]); ix = inputs.count("-i") - 1
         parts.append(f"[{ix}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{END + 2:.3f},asetpts=PTS-STARTPTS{extra}[{lab}]")
     if M.get("single"):
         track(M["single"], "m0", f",volume={gi}dB"); parts.append("[m0]asplit=2[ma][mb]")

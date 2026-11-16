@@ -40,7 +40,7 @@ def resolve(M, proj, total_out, s2o):
     mine = used.get(os.path.basename(proj), [])
     taken = {t for k, v in used.items() if k != os.path.basename(proj) for t in v}
     lvl = M.get("level", -30)   # LUFS alvo da trilha sob a voz (antes do ducking); -27 mais presente, -33 mais discreta
-    out = {"level": lvl, "pivot": round(s2o(M["pivot"]), 3) if M.get("pivot") is not None else None, "xfade": M.get("xfade", 1.6)}
+    out = {"level": lvl, "pivot": round(s2o(M["pivot"]), 3) if M.get("pivot") is not None else None, "xfade": M.get("xfade", 1.6), "ss": M.get("ss", 0)}
     lib = lambda x: x if os.path.isabs(x) else os.path.join(ROOT, x) if x.startswith("music/") else os.path.join(proj, x)
     g = lambda f: round(lvl - probe(f)[1], 1)
     if M.get("file"): out["single"] = lib(M["file"]); out["gains"] = [g(out["single"])] * 2
