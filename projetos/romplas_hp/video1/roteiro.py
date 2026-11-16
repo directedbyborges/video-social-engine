@@ -25,7 +25,7 @@ SCENES = [
  dict(w="O HP foi feito para isso", img="../cliente/hp.jpg", fallback=AMOSTRA, focus=[.35, .45], dim=.35, exit="panL"),
  dict(w="alta resistência à água", clip="10606752", cap="Alta resistência / à *água,*", exit="zin", mz="in"),
  dict(w="aos raios UV e à abrasão", exit="zout",
-      panel=dict(type="selos", bg="arcos", zoom="in", heading="Alta resistência",
+      panel=dict(type="selos", bg="arcos", zoom="in", head="Alta resistência",
                  items=[["gota", "Água", 0], ["sol", "Raios UV", "@w:raios"], ["camadas", "Abrasão", "@w:abrasão"]])),
  dict(w="com manutenção mínima", clip="10134042", cap="Manutenção / *mínima*", exit="panR"),
  dict(w="e aparência de novo", clip="9976443", focus=[.5, .62], cap="e aparência / de *novo*", exit="zin", mz="in"),
@@ -34,10 +34,10 @@ SCENES = [
  dict(w="e o cliente volta", clip="7402311", focus=[.45, .4], cap="e o cliente / *volta*", exit="zin"),
  dict(w="para comprar de novo", exit="zout",
       panel=dict(type="bigWords", bg="arcosBranco", zoom="in", color="var(--c2)", trace="onda",
-                 lines=[["para comprar", 0, 120], ["*de novo.*", "@w:novo", 150]])),
+                 lines=[["para comprar", 0, 140], ["*de novo.*", 0, 180]])),
  dict(w="não para reclamar", exit="panR",
-      panel=dict(type="bigWords", bg="azul", zoom="out", lines=[["Não para", 0, 130], ["*reclamar.*", "@w:reclamar", 170]],
-                 strike={"line": 1, "at": "@w:reclamar+0.55"})),
+      panel=dict(type="bigWords", bg="azul", zoom="out", lines=[["Não para", 0, 150], ["*reclamar.*", 0, 170]],
+                 strike={"line": 1}, strikeAt="@w:não+0.85")),
  # ---------- MARCA ----------
  dict(w="É a nova linha náutica", clip="7283092", exit="mask"),
  dict(w="da Romplas a fabricante", clip="9658542", cap="da *Romplas,* / a fabricante", exit="zin"),
@@ -59,11 +59,11 @@ SCENES = [
 OVERLAYS = [
  dict(scenes=(1, 2), cin="none", scene=dict(type="box3d", theme="azul", y=440,
       lines=[["Seu cliente de barco", 0, 60], ["volta *reclamando*", 0, 96], ["do revestimento?", 0, 70]])),
- dict(scenes=(7, 7), scene=dict(type="bigWords", letters=True, y=430, lines=[["desbota", "@w:desbota", 150], ["e *racha.*", "@w:racha", 170]])),
+ dict(scenes=(7, 7), scene=dict(type="bigWords", letters=True, y=430, lines=[["desbota", 0, 160], ["e *racha.*", 0, 180]])),
  dict(scenes=(10, 10), scene=dict(type="box3d", theme="branco", y=600, lines=[["É *você.*", "@w:você", 104], ["Não o fabricante.", "@w:não", 64]])),
  dict(scenes=(11, 11), scene=dict(type="lettering", y=400, sobre="Nova linha náutica", big="HP.", trace="gancho", sub="feito para o mar.")),
  dict(scenes=(16, 16), scene=dict(type="rotulo", forma="sublinhado", y=600, text="Por mais tempo.")),
- dict(scenes=(21, 21), scene=dict(type="rotulo", forma="colchete", y=700, text="Nova linha náutica.")),
+ dict(scenes=(21, 21), scene=dict(type="rotulo", forma="colchete", y=760, text="Nova linha náutica.")),
 ]
 
 # depois da narração: assinatura e CTA final (tempos relativos à cena)

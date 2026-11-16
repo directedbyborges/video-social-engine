@@ -79,7 +79,7 @@ def prep_broll(i, b):
     """Recorta, reduz (cobre 1350x2400), trata a cor e fixa 30 fps. Cache em <proj>/_broll."""
     dur = b["end"] - b["start"] + .8
     out = f"{P}/_broll/{i:02d}_{os.path.basename(b['file']).rsplit('.', 1)[0]}_{b.get('ss', 0)}_{dur:.2f}.mp4"
-    if os.path.exists(out): return out
+    if os.path.exists(out) and os.path.getsize(out) > 2000 and subprocess.run(["ffprobe", "-v", "error", out], capture_output=True).returncode == 0: return out
     img = b["file"].lower().endswith(IMG_EXT)
     try:
         if not img: g = grade.vf(b["file"], TL["grade"])
@@ -89,7 +89,10 @@ def prep_broll(i, b):
     except Exception: g = None
     vf = "scale=1350:2400:force_original_aspect_ratio=increase:force_divisible_by=2" + ("," + g if g else "") + ",fps=30,format=yuv420p"
     src = (["-loop", "1", "-framerate", "30", "-t", f"{dur:.2f}", "-i", b["file"]] if img else ["-ss", f"{b.get('ss', 0):.3f}", "-t", f"{dur:.2f}", "-i", b["file"]])
-    subprocess.run(["ffmpeg", "-v", "error", "-y"] + src + ["-vf", vf, "-an", "-c:v", "libx264", "-crf", "14", "-preset", "veryfast", out], check=True)
+    r = subprocess.run(["ffmpeg", "-v", "error", "-y"] + src + ["-vf", vf, "-an", "-c:v", "libx264", "-crf", "14", "-preset", "veryfast", out])
+    if r.returncode != 0:
+        if os.path.exists(out): os.remove(out)   # nunca deixa cache quebrado para trás
+        raise SystemExit(f"falha ao preparar o b-roll {b['file']}")
     return out
 for i, b in enumerate(BR):
     b["_img"] = b["file"].lower().endswith(IMG_EXT); b["_cache"] = prep_broll(i, b); b["_i"] = i
@@ -112,7 +115,7 @@ def cam_at(b, t):
     return k, dx, dy
 def mid_at(b, t):
     L = b["end"] - b["start"]; u = t - b["start"]; d = min(.8, L * .4); m = b.get("mz"); amt = b.get("mz_amount", .08)
-    z = 1 + b.get("zoom", .05 if b["_img"] else 0) * (u / max(L, .1))
+    z = 1 + b.get("zoom", .08 if b["_img"] else 0) * (u / max(L, .1))
     if m == "in": z *= 1 + amt * p2io((u - (L / 2 - d / 2)) / d)
     elif m == "out": z *= 1 + amt * (1 - p2io((u - (L / 2 - d / 2)) / d))
     return z

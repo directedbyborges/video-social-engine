@@ -56,6 +56,7 @@ function enterBlur(tl, el, t, vars = {}, d = .6) {
 function draw(tl, path, t, d = .5, ease = 'power2.out') {
   const len = path.getTotalLength ? path.getTotalLength() : 300;
   tl.fromTo(path, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease }, t);
+  tl.set(path, { opacity: 0 }, 0); tl.set(path, { opacity: 1 }, t + .01);   // ponta redonda não aparece como pontinho antes de desenhar
 }
 function shake(tl, el, t, a = 24) {
   tl.to(el, { keyframes: { x: [-a, a * .85, -a * .6, a * .4, -a * .2, 0] }, duration: .5, ease: 'none' }, t);

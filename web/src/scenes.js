@@ -532,8 +532,8 @@ SC.rotulo = {
 // Selos de atributo: heading + itens [[ícone, rótulo, t]] (círculo desenha por trace; no tempo falado ganha check)
 SC.selos = {
   html: p => `<div class="abs" style="left:0;right:0;top:${p.y ?? 440}px;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;color:#fff">
-    ${p.heading ? `<div class="hd" style="font-size:40px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:60px">${p.heading}</div>` : ''}
-    <div style="display:flex;gap:44px">${p.items.map((it, i) => `<div class="se s${i}" style="display:flex;flex-direction:column;align-items:center;width:250px">
+    ${p.head ? `<div class="hd" style="font-size:44px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:64px">${p.head}</div>` : ''}
+    <div style="display:flex;gap:44px;transform:scale(1.12)">${p.items.map((it, i) => `<div class="se s${i}" style="display:flex;flex-direction:column;align-items:center;width:250px">
       <div style="position:relative;width:236px;height:236px">
         <svg width="236" height="236" style="position:absolute;inset:0"><circle class="cc" cx="118" cy="118" r="114" fill="none" stroke="#fff" stroke-width="4" transform="rotate(-90 118 118)"/></svg>
         <div class="ri" style="position:absolute;inset:0;border:4px solid #fff;border-radius:50%;opacity:0"></div>
@@ -560,9 +560,9 @@ SC.selos = {
 SC.bigWords = {
   html: p => `<div class="abs" style="left:60px;right:60px;top:${p.y ?? 440}px;transform:translateY(-50%);text-align:center;color:${p.color || '#fff'};letter-spacing:-.04em">
     ${p.lines.map((l, i) => `<div class="bl l${i}" style="position:relative;display:block;font-size:${l[2] || 150}px;font-weight:400;line-height:.98;white-space:nowrap">${
-      String(l[0]).split(' ').map(w => { const k = /^\*.*\*[.,!?]*$/.test(w) || /^\*/.test(w); const tx = w.replace(/\*/g, ''); return `<span class="w" style="display:inline-block;margin:0 .1em;${k ? 'font-weight:800' : ''}">${p.letters ? tx.split('').map(c => `<span class="ch" style="display:inline-block">${c}</span>`).join('') : tx}</span>`; }).join('')}</div>`).join('')}
+      (() => { let on = false; return String(l[0]).split(' ').map(w => { if (w.startsWith('*')) on = true; const k = on; if (/\*[.,!?:]*$/.test(w)) on = false; const tx = w.replace(/\*/g, ''); return `<span class="w" style="display:inline-block;margin:0 .1em;${k ? 'font-weight:800' : ''}">${p.letters ? tx.split('').map(c => `<span class="ch" style="display:inline-block">${c}</span>`).join('') : tx}</span>`; }).join(''); })()}</div>`).join('')}
     <svg class="stk" style="position:absolute;left:0;top:0;overflow:visible" width="10" height="10"></svg></div>`,
-  sfx: p => p.lines.map((l, i) => ['big_word', Math.max(l[1] || 0, .05 + i * .25)]).concat(p.strike ? [['stamp', p.strike.at]] : []),
+  sfx: p => p.lines.map((l, i) => ['big_word', Math.max(l[1] || 0, .05 + i * .25)]).concat(p.strike ? [['stamp', p.strikeAt]] : []),
   build(tl, el, p, L) {
     p.lines.forEach((l, i) => {
       const t = Math.max(l[1] || 0, .05 + i * .25), items = el.querySelectorAll(`.l${i} ${p.letters ? '.ch' : '.w'}`);
@@ -578,7 +578,7 @@ SC.bigWords = {
     if (p.strike) {
       const ln = el.querySelector('.l' + (p.strike.line ?? p.lines.length - 1)), sv = el.querySelector('.stk'), w = ln.offsetWidth * .78, x0 = ln.offsetLeft + ln.offsetWidth * .11, y0 = ln.offsetTop + ln.offsetHeight * .56;
       sv.innerHTML = `<path d="M${x0} ${y0 + 14} C${x0 + w * .3} ${y0 - 4} ${x0 + w * .62} ${y0 + 10} ${x0 + w} ${y0 - 12}" fill="none" stroke="${APOIO}" stroke-width="14" stroke-linecap="round"/>`;
-      draw(tl, sv.querySelector('path'), p.strike.at, .6, SCURVE);
+      draw(tl, sv.querySelector('path'), p.strikeAt ?? .9, .6, SCURVE);
     }
   }
 };
