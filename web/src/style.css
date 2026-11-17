@@ -72,7 +72,8 @@ svg{overflow:visible}
 .glogo{height:86px;margin-bottom:18px;filter:drop-shadow(0 3px 12px rgba(0,0,0,.5))}
 /* ---------- modo narrado por tomadas (shots.js) ---------- */
 #world{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:540px 960px}
-.shot{position:absolute;inset:0;visibility:hidden}
+.shot{position:absolute;inset:0;visibility:hidden;overflow:hidden}
+.scam{position:absolute;inset:0;transform-origin:540px 960px}
 .pbg{position:absolute;left:-432px;top:-768px;width:1944px;height:3456px;overflow:hidden}
 .pbg.azul{background:var(--c1)}.pbg.branco{background:#fff}
 .pbg svg.arcs{position:absolute;left:0;top:0;width:100%;height:100%}

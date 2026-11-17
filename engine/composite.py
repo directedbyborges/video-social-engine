@@ -133,7 +133,7 @@ def shot_broll(s, t):
     st = shot_src[key]
     if "img" in st: fr = st["img"]
     else:
-        want = int((t - s["start"]) * st["fps"] * b.get("speed", 1))
+        want = max(0, int((t - s["start"]) * st["fps"] * b.get("speed", 1)))
         while st["n"] < want:
             ok, f = st["cap"].read()
             if not ok: break
@@ -152,27 +152,22 @@ def light_grade(fr):
     f = fr.astype(np.float32); f = (f - 128) * 1.06 + 128
     g = f.mean(axis=2, keepdims=True); f = g + (f - g) * 1.10
     return np.clip(f, 0, 255).astype(np.uint8)
-def cam_warp(fr, c):
-    s, x, y = c
-    M = np.float32([[s, 0, W / 2 - W / 2 * s + x], [0, s, H / 2 - H / 2 * s + y]])
-    return cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT_101)
-def motion_blur(fr, c0, c1):
-    """Desfoque de movimento perto do corte, a partir da velocidade da câmera (pan = linear, zoom = radial)."""
-    dx, dy = c1[1] - c0[1], c1[2] - c0[2]; ds = c1[0] / max(1e-6, c0[0])
-    v = max(abs(dx), abs(dy))
-    if v > 3:
-        n = int(min(90, v * .9)) | 1; k = np.zeros((n, n), np.float32)
-        if abs(dx) >= abs(dy): k[n // 2, :] = 1
-        else: k[:, n // 2] = 1
-        fr = cv2.filter2D(fr, -1, k / n)
-    if abs(np.log(ds)) > .004:
-        acc = fr.astype(np.float32); m = 5
-        for i in range(1, m):
-            z = ds ** (-.9 * i / m)
-            M = np.float32([[z, 0, W / 2 - W / 2 * z], [0, z, H / 2 - H / 2 * z]])
-            acc += cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT_101)
-        fr = (acc / m).astype(np.uint8)
-    return fr
+ZMIN = {"in": .87, "out": .88}
+def place(canvas, fr, sc, x, y):
+    """Põe o quadro da tomada (escala em torno do centro + deslocamento do empurrão) sobre a tela, sem borda."""
+    M = np.float32([[sc, 0, W / 2 - W / 2 * sc + x], [0, sc, H / 2 - H / 2 * sc + y]])
+    cv2.warpAffine(fr, M, (W, H), dst=canvas, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_TRANSPARENT)
+def motion_blur(fr, e0, e1):
+    """Desfoque direcional no empurrão, a partir da velocidade da tomada (mesmo índice nos dois quadros)."""
+    if not e0 or not e1: return fr
+    prev = {e[0]: e for e in e0}; same = [e for e in e1 if e[0] in prev]
+    if not same: return fr
+    dx = same[0][2] - prev[same[0][0]][2]; dy = same[0][3] - prev[same[0][0]][3]; v = max(abs(dx), abs(dy))
+    if v <= 3: return fr
+    n = int(min(81, v * .7)) | 1; k = np.zeros((n, n), np.float32)
+    if abs(dx) >= abs(dy): k[n // 2, :] = 1
+    else: k[:, n // 2] = 1
+    return cv2.filter2D(fr, -1, k / n)
 
 out_v = f"{P}/{name}_video.mp4"
 enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
@@ -181,13 +176,16 @@ in_behind_prev = False
 for k in range(int(round(t0 * FPS)), int(round(t1 * FPS))):
     t = k / FPS
     if SHOTS:
-        cams = TL["cam"]; c1 = cams[min(k, len(cams) - 1)]; c0 = cams[max(0, min(k - 1, len(cams) - 1))]
-        sh = shot_at(t)
-        # o b-roll acompanha pan e zoom para dentro, mas nunca encolhe abaixo da tela (zoom para fora só no layer gráfico)
-        frame = cam_warp(light_grade(shot_broll(sh, t)), [max(1.0, c1[0])] + c1[1:]) if sh.get("broll") else np.full((H, W, 3), BG, np.uint8)
+        Fr = TL["frames"]; e1 = Fr[min(k, len(Fr) - 1)]; e0 = Fr[max(0, min(k - 1, len(Fr) - 1))]
+        frame = np.full((H, W, 3), BG, np.uint8)
+        for i, sc, x, y in e1:
+            sh = SHOTS[i]
+            if not sh.get("broll"): continue
+            # zoom do meio no b-roll é relativo: acompanha o texto sem nunca encolher abaixo da tela
+            place(frame, light_grade(shot_broll(sh, t)), max(1.0, sc / ZMIN.get(sh.get("zoom"), 1.0)), x, y)
         gp = f"{P}/g/{min(k, gfx_last):05d}.png"
         if os.path.exists(gp): frame = blend(frame, cv2.imread(gp, cv2.IMREAD_UNCHANGED))
-        frame = motion_blur(frame, c0, c1)
+        frame = motion_blur(frame, e0, e1)
         enc.stdin.write(np.ascontiguousarray(frame).tobytes())
         continue
     if tf_cap is not None and t >= E["card_start"]:

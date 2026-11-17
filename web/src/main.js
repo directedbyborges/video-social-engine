@@ -134,7 +134,7 @@ document.fonts.ready.then(() => {
   buildCaptions(master);
   master.set({}, {}, TL.gfxEnd + .5);
   window.DURATION = TL.gfxEnd;
-  window.seek = t => { master.time(t + 0.0005, false); if (TL.shots) applyCam(t); };
+  window.seek = t => { master.time(t + 0.0005, false); if (TL.shots) applyFrame(t); };
   window.SFX = SFX;
   window.READY = true;
 });

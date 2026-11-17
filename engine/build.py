@@ -74,44 +74,37 @@ def build_shots(S, P, s2o, total):
         if prev == "mask": d["afterMask"] = True; mask = d["start"]
     return out, mask
 
-def camera(shots, END, fps=30):
-    """Câmera por quadro [escala, x, y]. Camada 1: transição (~1 s na entrada com SNAP-IN, ~1 s na saída com ACCEL-OUT,
-    pico de velocidade no corte). Camada 2: zoom do meio (13%, power2.inOut, centrado no meio livre da tomada)."""
+PANS = ("panR", "panL", "panU", "panD")
+def camera(shots, END, fps=30, HW=.3, W=1080, H=1920):
+    """Plano por quadro: lista de [tomada, escala, x, y] das tomadas visíveis.
+    Transição = empurrão unilateral (pan horizontal ou vertical): a tomada que entra empurra a que sai, as duas
+    encostadas, em HW s antes e depois do corte, easeInOut cúbico (pico de velocidade no corte).
+    Zoom do meio (13%, power2.inOut, centrado na tomada) só na escala; a 1ª tomada e a que vem depois da máscara assentam."""
     eo = lambda x: 1 - 2 ** (-10 * x) if x < 1 else 1.0
-    ei = lambda x: 2 ** (10 * x - 10) if x > 0 else 0.0
-    io = lambda x: 2 * x * x if x < .5 else 1 - (-2 * x + 2) ** 2 / 2
+    io2 = lambda x: 2 * x * x if x < .5 else 1 - (-2 * x + 2) ** 2 / 2
+    io3 = lambda x: 4 * x ** 3 if x < .5 else 1 - (-2 * x + 2) ** 3 / 2
     cl = lambda x: max(0.0, min(1.0, x))
-    res = []
+    n, res = len(shots), []
     for k in range(int(round(END * fps)) + 1):
-        t = k / fps
-        sh = next((s for s in shots if s["start"] <= t < s["end"]), shots[-1])
-        L = sh["end"] - sh["start"]; u = t - sh["start"]
-        IN, OUT = min(.95, L * .42), min(.85, L * .38)
-        s, x, y = 1.0, 0.0, 0.0
-        cin, cout = sh.get("cin"), sh.get("cout")
-        if u < IN:
-            e = eo(u / IN)
-            if cin == "zin": s *= 1.2 - .2 * e
-            elif cin == "zout": s *= .86 + .14 * e
-            elif cin == "panR": x += PAN * (1 - e)
-            elif cin == "panL": x -= PAN * (1 - e)
-            elif cin == "panU": y += PAN * (1 - e)
-            elif cin == "panD": y -= PAN * (1 - e)
-            elif cin is None: s *= 1.06 - .06 * e          # primeira tomada / depois da máscara: assenta
-        if cout and cout != "mask" and u > L - OUT:
-            e = ei((u - (L - OUT)) / OUT)
-            if cout == "zin": s *= 1 + .2 * e
-            elif cout == "zout": s *= 1 - .14 * e
-            elif cout == "panR": x -= PAN * e
-            elif cout == "panL": x += PAN * e
-            elif cout == "panU": y -= PAN * e
-            elif cout == "panD": y += PAN * e
-        zm = sh.get("zoom")
-        if zm in ("in", "out"):
-            c = IN + max(0.0, L - IN - OUT) / 2; d = .8
-            v = io(cl((u - (c - d / 2)) / d))
-            s *= (.87 + .13 * v) if zm == "in" else (1 - .12 * v)
-        res.append([round(s, 4), round(x, 1), round(y, 1)])
+        t = k / fps; ents = []
+        for i, sh in enumerate(shots):
+            a, b = sh["start"], sh["end"]
+            ha = HW if (i > 0 and sh.get("cin") in PANS) else 0
+            hb = HW if (i < n - 1 and sh.get("cout") in PANS) else 0
+            if not (a - ha <= t < b + hb) and not (i == n - 1 and t >= b): continue
+            L, u = b - a, t - a; s, x, y = 1.0, 0.0, 0.0
+            if i == 0 or sh.get("afterMask"): s *= 1.06 - .06 * eo(cl(u / .9))
+            zm = sh.get("zoom")
+            if zm in ("in", "out"):
+                v = io2(cl((u - (L / 2 - .4)) / .8)); s *= (.87 + .13 * v) if zm == "in" else (1 - .12 * v)
+            if ha and t < a + ha:
+                r = 1 - io3(cl((t - (a - ha)) / (2 * ha))); c = sh["cin"]
+                x, y = {"panR": (W * r, 0), "panL": (-W * r, 0), "panU": (0, H * r), "panD": (0, -H * r)}[c]
+            if hb and t >= b - hb:
+                p = io3(cl((t - (b - hb)) / (2 * hb))); c = sh["cout"]
+                x, y = {"panR": (-W * p, 0), "panL": (W * p, 0), "panU": (0, -H * p), "panD": (0, H * p)}[c]
+            ents.append([i, round(s, 4), round(x, 1), round(y, 1)])
+        res.append(ents)
     return res
 
 def main(P):
@@ -258,7 +251,7 @@ def main(P):
         "music": music.resolve(S.get("music"), P, total, s2o), "sfx": S.get("sfx", {"auto": True}),
         "palette": {k: B["colors"].get(k) for k in ("c1", "c2", "c3", "ink", "paper") if B["colors"].get(k)},
     }
-    if shots: tl.update(shots=shots, cam=cam, mask=mask, broll=[])
+    if shots: tl.update(shots=shots, frames=cam, mask=mask, broll=[])
     json.dump(tl, open(P + "/timeline.json", "w"), ensure_ascii=False, indent=1)
     print(f"total {total:.2f}s (fim {end['end']:.2f}s) · cortes {len(cuts)} · palavras sem par {unmatched} · ênfases {len(emph)} · atrás {len(behind)}")
     for g in groups: print(f"  {g['t']:6.2f}-{g['end']:6.2f} {'@' + ','.join(g['flags']) if g['flags'] else ''}", " / ".join(" ".join(t["w"] for t in l["toks"]) for l in g["lines"]))

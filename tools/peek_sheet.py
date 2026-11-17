@@ -16,10 +16,10 @@ def broll(s, t):
 tiles = []
 for i, s in enumerate(TL["shots"]):
     t = s["start"] + (s["end"] - s["start"]) * frac
-    c = TL["cam"][min(len(TL["cam"]) - 1, round(t * 30))]
+    ents = TL["frames"][min(len(TL["frames"]) - 1, round(t * 30))]; c = next((e[1:] for e in ents if e[0] == i), [1, 0, 0])
     fr = broll(s, t) if s.get("broll") else np.full((H, W, 3), 128, np.uint8)
     if s.get("broll"):
-        s0 = max(1.0, c[0]); M = np.float32([[s0, 0, W / 2 - W / 2 * s0 + c[1]], [0, s0, H / 2 - H / 2 * s0 + c[2]]]); fr = cv2.warpAffine(fr, M, (W, H), borderMode=cv2.BORDER_REFLECT_101)
+        s0 = max(1.0, c[0] / {"in": .87, "out": .88}.get(s.get("zoom"), 1.0)); M = np.float32([[s0, 0, W / 2 - W / 2 * s0 + c[1]], [0, s0, H / 2 - H / 2 * s0 + c[2]]]); fr = cv2.warpAffine(fr, M, (W, H), borderMode=cv2.BORDER_REFLECT_101)
     g = cv2.imread(f"{P}/peek/{i + 1:02d}.png", cv2.IMREAD_UNCHANGED)
     if g is not None and (g.ndim == 2 or g.shape[2] == 3): fr = g if g.ndim == 3 else cv2.cvtColor(g, cv2.COLOR_GRAY2BGR)
     elif g is not None:

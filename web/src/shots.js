@@ -53,6 +53,22 @@ function counter(tl, root, p, SFXo) {
   tl.to(o, { n: p.count.to, duration: p.count.dur || .9, ease: 'power2.out', onUpdate: () => { target.textContent = fmt(o.n) + suf; } }, t);
   SFXo.push(['counter', t, t + (p.count.dur || .9)]);
 }
+const TOP = p => (typeof p.y === 'number' ? p.y : 0);
+function centerY(el, p) { if (typeof p.y !== 'number') el.style.top = Math.round(960 - el.offsetHeight / 2) + 'px'; }
+// logo: o ícone ("O") se revela primeiro, no centro do logo; depois volta ao lugar e as letras entram uma a uma, sem bounce
+function logoReveal(tl, svg, t0 = 0) {
+  const paths = [...svg.querySelectorAll('path')], bbs = paths.map(p => p.getBBox());
+  let oi = 0, best = 9; bbs.forEach((b, i) => { const r = Math.abs(b.width / b.height - 1); if (r < best) { best = r; oi = i; } });
+  const O = paths[oi], ob = bbs[oi], vb = svg.viewBox.baseVal, ocx = ob.x + ob.width / 2, ocy = ob.y + ob.height / 2;
+  svg.appendChild(O);
+  const dx = vb.x + vb.width / 2 - ocx;
+  tl.fromTo(O, { x: dx, scale: 0, rotation: -90, opacity: 0, svgOrigin: `${ocx} ${ocy}` }, { x: dx, scale: 1.7, rotation: 0, opacity: 1, duration: .6, ease: 'snap', immediateRender: true }, t0);
+  tl.to(O, { x: 0, scale: 1, duration: .5, ease: 'scurve' }, t0 + .6);
+  paths.filter(p => p !== O).sort((a, b) => a.getBBox().x - b.getBBox().x).forEach((p, j) => {
+    const left = p.getBBox().x < ocx;
+    tl.fromTo(p, { opacity: 0, x: left ? 28 : -28, filter: 'blur(6px)' }, { opacity: 1, x: 0, filter: 'blur(0px)', duration: .45, ease: 'power3.out', immediateRender: true }, t0 + .78 + j * .05);
+  });
+}
 function drawPath(tl, path, t, d = .7, ease = 'scurve') {
   const len = path.getTotalLength();
   tl.fromTo(path, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: d, ease, immediateRender: true }, t);
@@ -78,9 +94,9 @@ SH.block = {
 
 // ---------- tipografia solta sobre o painel (pouso de perto) ----------
 SH.type = {
-  html: p => `<div class="tg" style="top:${p.y}px">${p.lines.map((l, i) => lineHTML(l, i, 'tl')).join('')}</div>`,
+  html: p => `<div class="tg" style="top:${TOP(p)}px">${p.lines.map((l, i) => lineHTML(l, i, 'tl')).join('')}</div>`,
   build(tl, el, p, L, S) {
-    const g = el.querySelector('.tg'); fitWidth(g, 900);
+    const g = el.querySelector('.tg'); fitWidth(g, 900); centerY(g, p);
     tl.fromTo(g, { scale: p.from || 1.3, opacity: 0, filter: 'blur(14px)' }, { scale: 1, opacity: 1, filter: 'blur(0px)', duration: .8, ease: 'snap', immediateRender: true }, .04);
     enterLines(tl, g, .12, { letters: p.letters });
     counter(tl, g, p, S);
@@ -89,11 +105,12 @@ SH.type = {
 
 // ---------- text label do toolkit (colchete ou sublinhado) desenhado por traço ----------
 SH.label = {
-  html: p => `<div class="tg" style="top:${p.y}px">${p.pre ? `<div class="tl r" style="font-size:${p.prePx || 104}px;margin-bottom:24px">${p.pre}</div>` : ''}
+  html: p => `<div class="tg" style="top:${TOP(p)}px">${p.pre ? `<div class="tl r" style="font-size:${p.prePx || 104}px;margin-bottom:24px">${p.pre}</div>` : ''}
     <div class="rot" style="font-size:${p.px || 100}px;color:${p.color || '#fff'};font-weight:${p.weight || 600}"><span class="rtx">${p.text}</span><svg class="rs"><path/></svg></div>
     ${p.arrow ? `<svg class="arr" viewBox="0 0 40 60" style="width:70px;margin-top:70px;overflow:visible"><path d="M20 4v48M6 38l14 14 14-14" fill="none" stroke="${BR.c3}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>` : ''}</div>`,
   sfx: p => [['pill', .5]],
   build(tl, el, p, L) {
+    centerY(el.querySelector('.tg'), p);
     if (p.pre) enterLines(tl, el.querySelector('.tg'), .04);
     const r = el.querySelector('.rot'), w = r.offsetWidth, h = r.offsetHeight, R = 48, path = r.querySelector('path');
     const d = p.forma === 'sublinhado'
@@ -109,31 +126,27 @@ SH.label = {
 
 // ---------- logo oficial peça por peça + texto ----------
 SH.logo = {
-  html: p => `<div class="tg" style="top:${p.y}px"><div class="lgw" style="width:${p.w || 760}px">${SVGT[p.logo || 'logo_white']}</div>
+  html: p => `<div class="tg" style="top:${TOP(p)}px"><div class="lgw" style="width:${p.w || 760}px">${SVGT[p.logo || 'logo_white']}</div>
     <div class="tlines" style="margin-top:${p.gap || 70}px">${(p.lines || []).map((l, i) => lineHTML(l, i, 'tl')).join('')}</div></div>`,
   sfx: p => [['brand_reveal', .05]],
   build(tl, el, p, L) {
-    const svg = el.querySelector('.lgw svg'); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.width = '100%'; svg.style.height = 'auto';
-    const paths = [...svg.querySelectorAll('path')].sort((a, b) => a.getBBox().x - b.getBBox().x);
-    paths.forEach((pa, i) => {
-      const bb = pa.getBBox(), isO = i === 1;
-      gsap.set(pa, { transformOrigin: `${bb.x + bb.width / 2}px ${bb.y + bb.height / 2}px` });
-      if (isO) tl.fromTo(pa, { rotation: -140, scale: 1.4, opacity: 0 }, { rotation: 0, scale: 1, opacity: 1, duration: .9, ease: 'snap', immediateRender: true }, .05);
-      else tl.fromTo(pa, { y: 50, rotation: -8, opacity: 0, filter: 'blur(10px)' }, { y: 0, rotation: 0, opacity: 1, filter: 'blur(0px)', duration: .6, ease: 'snap', immediateRender: true }, .12 + i * .06);
-    });
-    enterLines(tl, el.querySelector('.tlines'), .55);
+    const svg = el.querySelector('.lgw svg'); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.width = '100%'; svg.style.height = 'auto'; svg.style.overflow = 'visible';
+    centerY(el.querySelector('.tg'), p);
+    logoReveal(tl, svg, .02);
+    enterLines(tl, el.querySelector('.tlines'), 1.15);
   }
 };
 
 // ---------- símbolo "O" desenhado + anéis (a rede) ----------
 SH.rings = {
-  html: p => `<div class="tg" style="top:${p.y}px"><div style="position:relative;width:600px;height:600px">
+  html: p => `<div class="tg" style="top:${TOP(p)}px"><div style="position:relative;width:600px;height:600px">
     <svg viewBox="0 0 600 600" class="rg" style="position:absolute;inset:0">${[170, 220, 270].map(r => `<circle cx="300" cy="300" r="${r}" fill="none" stroke="${BR.c3}" stroke-width="3"/>`).join('')}</svg>
     <div class="sym" style="position:absolute;left:180px;top:180px;width:240px;height:240px">${SVGT[p.symbol || 'symbol_white']}</div></div>
     <div class="tlines" style="margin-top:10px">${(p.lines || []).map((l, i) => lineHTML(l, i, 'tl')).join('')}</div></div>`,
   sfx: p => [['icon_pop', .45]],
   build(tl, el, p, L) {
     const svg = el.querySelector('.sym svg'); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.width = '100%'; svg.style.height = '100%';
+    centerY(el.querySelector('.tg'), p);
     const pa = svg.querySelector('path'); pa.setAttribute('stroke', getComputedStyle(pa).fill || '#fff'); pa.setAttribute('stroke-width', '1.5');
     tl.fromTo(pa, { fillOpacity: 0 }, { fillOpacity: 1, duration: .3, ease: 'none', immediateRender: true }, .55);
     drawPath(tl, pa, .02, .6);
@@ -147,10 +160,11 @@ SH.rings = {
 
 // ---------- cartão de cadastro (canto vivo), campos preenchendo ----------
 SH.signup = {
-  html: p => `<div class="tg" style="top:${p.y}px">${(p.lines || []).map((l, i) => lineHTML(l, i, 'tl')).join('')}
+  html: p => `<div class="tg" style="top:${TOP(p)}px">${(p.lines || []).map((l, i) => lineHTML(l, i, 'tl')).join('')}
     <div class="sucard" style="margin-top:44px">${p.fields.map(f => `<div class="fld"><div class="fl">${f[0]}</div><div class="fv"><span class="tx" data-v="${f[1]}"></span><i class="cur"></i></div></div>`).join('')}</div></div>`,
   sfx: p => [['ui_card', .25], ['typing', .5, .5 + p.fields.length * .3]],
   build(tl, el, p, L) {
+    centerY(el.querySelector('.tg'), p);
     enterLines(tl, el.querySelector('.tg'), .04);
     const card = el.querySelector('.sucard');
     tl.fromTo(card, { clipPath: 'inset(100% 0% 0% 0%)', y: 60 }, { clipPath: 'inset(0% 0% 0% 0%)', y: 0, duration: .8, ease: 'snap', immediateRender: true }, .2);
@@ -180,9 +194,9 @@ SH.logoSign = {
     <div class="ltr" style="top:${(p.y || 820) + 120}px"><div class="tl r" style="font-size:${p.px || 100}px">${p.l1 || 'Revestindo'}</div><div class="tl b" style="font-size:${p.px || 100}px">${p.l2 || 'possibilidades.'}</div><svg class="gh"><path/></svg></div>`,
   sfx: p => [['brand_reveal', .05]],
   build(tl, el, p, L) {
-    const lg = el.querySelector('.lgs'), svg = lg.querySelector('svg'); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.width = '100%'; svg.style.height = 'auto';
-    tl.fromTo(lg, { scale: 0 }, { scale: 1, duration: 1.05, ease: 'logo', immediateRender: true }, 0);
-    tl.to(lg, { y: -140, scale: .78, duration: .9, ease: 'scurve' }, 1.1);
+    const lg = el.querySelector('.lgs'), svg = lg.querySelector('svg'); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.width = '100%'; svg.style.height = 'auto'; svg.style.overflow = 'visible';
+    logoReveal(tl, svg, 0);
+    tl.to(lg, { y: -140, scale: .78, duration: .7, ease: 'scurve' }, 1.3);
     const ltr = el.querySelector('.ltr'); gsap.set(ltr, { xPercent: -50 });
     const last = ltr.querySelectorAll('.tl')[1], k = parseFloat(getComputedStyle(last).fontSize) / 48, w = last.offsetWidth;
     const base = last.offsetTop + last.offsetHeight, gh = ltr.querySelector('.gh');
@@ -190,20 +204,21 @@ SH.logoSign = {
     const pa = gh.querySelector('path');
     pa.setAttribute('d', `M0 ${58 * k} L${w + 4 * k} ${58 * k} C${w + 40 * k} ${58 * k} ${w + 54 * k} ${40 * k} ${w + 54 * k} ${8 * k}`);
     pa.setAttribute('stroke', BR.c3); pa.setAttribute('stroke-width', Math.max(3, 3 * k * .75)); pa.setAttribute('fill', 'none'); pa.setAttribute('stroke-linecap', 'round');
-    enterLines(tl, ltr, 1.3, { stagger: .12 });
-    drawPath(tl, pa, 1.6, .7);
+    enterLines(tl, ltr, 1.45, { stagger: .12 });
+    drawPath(tl, pa, 1.7, .55);
   }
 };
 
 // ---------- CTA: botão de canto vivo + cursor clicando ----------
 SH.cta = {
-  html: p => `<div class="tg" style="top:${p.y || 760}px">
+  html: p => `<div class="tg" style="top:${TOP(p)}px">
     <div class="btnw"><div class="btn">${p.cta}<svg viewBox="0 0 22 20" class="seta"><path d="M2 10h17M12 3l7 7-7 7"/></svg></div><svg class="ring" viewBox="0 0 200 200"><circle cx="100" cy="100" r="80"/></svg></div>
     <div class="subs">${(p.sub || []).map(s => `<div class="tl r" style="font-size:${p.subPx || 58}px;color:${BR.ink}">${s}</div>`).join('')}</div></div>
     <svg class="cursor" viewBox="0 0 50 74"><path d="M3 3 L3 58 L17 46 L27 68 L38 63 L28 42 L46 42 Z"/></svg>`,
   sfx: p => [['icon_pop', p.clickAt || 1.4]],
   build(tl, el, p, L) {
     const btn = el.querySelector('.btn'), cur = el.querySelector('.cursor'), ring = el.querySelector('.ring');
+    centerY(el.querySelector('.tg'), p);
     const ck = p.clickAt || 1.4, br = btn.getBoundingClientRect(), wr = btn.parentNode.getBoundingClientRect();
     const tx = br.left + br.width * .62, ty = br.top + br.height * .55;
     gsap.set(ring, { left: br.width * .62 - 110, top: br.height * .55 - 110 });
@@ -219,13 +234,13 @@ SH.cta = {
 // ---------- máscara da marca (arcos varrendo a tela) — uma vez, no corte T ----------
 function buildMask(master, T) {
   const m = document.getElementById('mask');
-  const cols = [BR.c3, BR.c1, BR.c2, BR.c1, BR.c3];
-  m.innerHTML = cols.map((c, i) => { const R = 2500 - i * 250; return `<i style="background:${c};left:${1080 - R}px;top:${1920 - R}px;width:${2 * R}px;height:${2 * R}px"></i>`; }).join('');
-  const discs = [...m.children];
-  master.set(m, { visibility: 'visible' }, T - .55);
-  discs.forEach((d, i) => master.fromTo(d, { scale: 0 }, { scale: 1, duration: .5, ease: 'accel', immediateRender: false }, T - .55 + i * .03));
-  discs.slice().reverse().forEach((d, i) => master.to(d, { x: -2600, y: -900, duration: .55, ease: 'snap' }, T + i * .035));
-  master.set(m, { visibility: 'hidden' }, T + .8);
+  const D = [[BR.c3, 1520, -.12], [BR.c2, 1400, -.06], [BR.c1, 1290, 0]];   // [cor, raio, atraso]: o último cobre a tela no corte
+  m.innerHTML = D.map(([c, R]) => `<i style="background:${c};left:${540 - R}px;top:${960 - R}px;width:${2 * R}px;height:${2 * R}px"></i>`).join('');
+  const discs = [...m.children], dur = 1.3;
+  master.set(m, { visibility: 'visible' }, T - dur / 2 - .15);
+  discs.forEach((d, i) => { const R = D[i][1], off = 540 + R + 60;
+    master.fromTo(d, { x: off }, { x: -off, duration: dur, ease: 'none', immediateRender: true }, T - dur / 2 + D[i][2]); });
+  master.set(m, { visibility: 'hidden' }, T + dur / 2 + .05);
   SFX.push(['climax', T - .05]);
 }
 
@@ -236,13 +251,14 @@ function arcsSVG(kind) {
     ? `<circle cx="${ox + c[0] * k}" cy="${oy + c[1] * k}" r="${c[2] * k}" fill="${c[3]}"/>`
     : `<circle cx="${ox + c[0] * k}" cy="${oy + c[1] * k}" r="${c[2] * k}" fill="none" stroke="${BR.c3}" stroke-opacity="${c[4] * 1.6}" stroke-width="${.8 * k}"/>`).join('')}</svg>`;
 }
+const SECS = [];
 function buildShots(master) {
   const world = document.getElementById('world');
   TL.shots.forEach((s, si) => {
     const sec = document.createElement('section'); sec.className = 'shot';
     const bg = s.panel === 'azul' ? `<div class="pbg azul">${arcsSVG('a')}</div>` : s.panel === 'branco' ? `<div class="pbg branco">${arcsSVG('b')}</div>` : '';
     const theme = s.panel === 'azul' ? 'on-azul' : s.panel === 'branco' ? 'on-branco' : 'on-foto';
-    sec.innerHTML = `${bg}<div class="sw ${theme}">${s.scene ? SH[s.scene.type].html(s.scene) : ''}</div>`;
+    sec.innerHTML = `<div class="scam">${bg}<div class="sw ${theme}">${s.scene ? SH[s.scene.type].html(s.scene) : ''}</div></div>`;
     world.appendChild(sec);
     const L = s.end - s.start, tl = gsap.timeline();
     if (s.scene) {
@@ -255,13 +271,13 @@ function buildShots(master) {
     if (arcs) tl.fromTo(arcs, { x: 30 }, { x: -60, duration: L, ease: 'none', immediateRender: true }, 0);
     if (si > 0 && !s.afterMask) SFX.push(['scene_cut', s.start]);
     tl.set({}, {}, L);
-    master.set(sec, { visibility: 'visible' }, s.start);
     master.add(tl, s.start);
-    master.set(sec, { visibility: 'hidden' }, s.end);
+    SECS.push(sec);
   });
   if (TL.mask != null) buildMask(master, TL.mask);
 }
-function applyCam(t) {
-  const c = TL.cam[Math.min(TL.cam.length - 1, Math.max(0, Math.round(t * 30)))];
-  document.getElementById('world').style.transform = `translate(${c[1]}px,${c[2]}px) scale(${c[0]})`;
+function applyFrame(t) {
+  const F = TL.frames, k = Math.min(F.length - 1, Math.max(0, Math.round(t * 30)));
+  SECS.forEach(sec => { sec.style.visibility = 'hidden'; });
+  F[k].forEach(([i, sc, x, y]) => { const sec = SECS[i]; sec.style.visibility = 'visible'; sec.style.transform = `translate(${x}px,${y}px)`; sec.firstElementChild.style.transform = `scale(${sc})`; });
 }
