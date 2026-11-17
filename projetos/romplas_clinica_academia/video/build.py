@@ -112,7 +112,7 @@ sc(halves('m_maca', 'm_espera'),
 at_scene(8)
 sc(photo('m_aparelho', '50% 45%', .08), center(chip('*banco de aparelho*', 'chipL', wt(15.12), px=64), top=1080, h=160), 'in')
 at_scene(9)
-sc(photo('m_outraloja', '50% 50%', .12), center(box([('ele procura em', 62, 400, ''), ('*outra loja.*', 130, 400, '')]), top=1000, h=320), 'out')
+sc(photo('m_outraloja2', '50% 50%', .1), center(box([('ele procura em', 62, 400, ''), ('*outra loja.*', 130, 400, '')]), top=1000, h=320), 'out')   # Magnific 6781867: vendedor mostra o mostruário a um cliente
 at_scene(10)   # o resto do pedido vai junto (chips saem para a direita no "lá")
 chips11 = (f'<div class="row" style="gap:20px" data-a="up" data-t="{wt(18.88)}" data-out="{wt(19.88) + .1}">'
            + ''.join(f'<div class="chip" style="border:4px solid {AZ};color:{AZ};font-size:56px"><span class="ct">{x}</span></div>' for x in ['espuma', 'cola', 'grampo'])
@@ -127,7 +127,7 @@ sc(photo('p_lxr'), center(f'<div class="chips">{chip("resistente a *mancha*", "c
 at_scene(14)
 sc(photo('m_academia', '50% 50%', .15), center(icon('halter', W, 200, EARLY) + box([('e linha para', 60, 400, ''), ('*academia.*', 136, 400, '')], t=EARLY + .05), top=820, h=560, gap=24), 'out')
 at_scene(15)
-sc(photo('m_parceria', '50% 50%', .12), center(box([('você vende', 62, 400, ''), ('*mais*', 150, 400, 'line-height:.9'), ('para o mesmo tapeceiro', 52, 400, 'margin-top:10px')], 'box3d', EARLY)), 'in')
+sc(photo('m_venda', '50% 50%', .1), center(box([('você vende', 62, 400, ''), ('*mais*', 150, 400, 'line-height:.9'), ('para o mesmo tapeceiro', 52, 400, 'margin-top:10px')], 'box3d', EARLY), top=540, h=420), 'in')   # Magnific 10087784: pagamento no caixa da loja de tecidos
 at_scene(16)
 sc(arcos(light=True), center(f'<div class="rotulo" data-a="rotulo" data-t="{EARLY}" style="color:{AZ};font-size:84px;text-align:center">sem precisar buscar<br><b>cliente novo.</b><svg class="rt"></svg></div>'), 'out')
 at_scene(17)

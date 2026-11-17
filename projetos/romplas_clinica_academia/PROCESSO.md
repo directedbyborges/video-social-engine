@@ -50,3 +50,9 @@
 - Trocadas por fotos reais de produto do site romplas.com.br (1600–1920 px): cena 5 = mosaico das linhas hospitalar e academia (LXR, Omega New, Dollaro, Bagun, Napa, Casco) em `fotos/p_mosaico.jpg`; cena 14 = LXR azul-claro (hospitalar) `fotos/p_lxr.jpg`; cena 19 = Uruguai Original marinho `fotos/p_uruguai.jpg`.
 - Pendente: os 12 clipes do Magnific em 1080p (baixar pelo site, entra na assinatura; pela API ~600 créditos cada).
 - Entrega: entrega/Romplas_Lojista_ClinicaAcademia_v3.mp4 · 53,5 s · −14,0 LUFS · true peak −2,5 dBTP.
+
+## v4 (pedido: trocar as imagens 8 e 11 da lista de clipes)
+- Cena 10 "ele procura em outra loja": era o 7918132 (senhor entrando numa lojinha). Agora 6781867, vendedor mostrando mostruário de tecidos a um cliente (real, premium): https://www.magnific.com/premium-video/customers-looking-fabric-samples_6781867 (usar só ~0–5 s; depois entra uma mulher no quadro).
+- Cena 16 "você vende mais para o mesmo tapeceiro": era o 7947589 (aperto de mão numa floricultura). Agora 10087784, pagamento no caixa de uma loja de tecidos com mostruários (real, premium): https://www.magnific.com/premium-video/customer-making-contactless-payment-with-smartphone-fabric-store_10087784 ; box 3D subiu para a parte de cima da tela.
+- Alternativas vistas: 7642524 (mercado de tecidos), 6969597 (senhora em loja de tecidos), 8966381 (alfaiate cortando tecido), 9570027 (vendedor desenrolando rolo na banca).
+- Entrega: entrega/Romplas_Lojista_ClinicaAcademia_v4.mp4 · 53,5 s · −14,0 LUFS · true peak −2,5 dBTP.
