@@ -12,6 +12,14 @@ Vídeo vertical 9:16 de captação de lojistas de material para tapeçaria.
 - Cena 10: foto em alta do Uruguai preto (sem etiqueta) enviada pelo usuário. Cena 11: recorte fechado nos rolos da imagem C (o usuário não tem as fotos das cores neste PC).
 - Cena 4: clipe 9711700 veio em 720p. Cena 20: clipe alternativo do Magnific (a foto da equipe só existia em baixa).
 
+## v2 (ajustes pedidos no v1)
+- Cena 2: o clipe 1983ef45 tem rosto que muda de forma (defeito do próprio clipe, provavelmente gerado por IA); trocado pelo 9e0e146b (homem entrando na loja, rosto estável).
+- Transições: só empurrão unilateral (a tomada que entra empurra a que sai), 2 horizontais para 1 vertical; sem zoom de transição nem desfoque radial.
+- Máscara da virada: arcos atravessam da direita para a esquerda (um sentido só).
+- Logo: ícone "O" se revela primeiro no centro, volta ao lugar e as letras entram sem bounce (logo da cena 14 e assinatura).
+- Telas só de texto/marca (cenas 3, 10, 14, 15, 17, 18, 19 e CTA) centradas na tela.
+- Entrega: `entrega/Romplas_UruguaiOriginal_PerdendoVendas_v2.mp4`.
+
 ## Narração conferida (transcrição em `v1/transcript.json`)
 - Nenhuma tag lida em voz alta; números e "Romplas" lidos certo (o Whisper do texto corrido escreveu "HomePlus" aos 37,4 s, mas o trecho isolado dá "Romplas").
 - A voz disse "pedindo **o** Uruguai Original" e "**pra** vender" (roteiro: "pedindo Uruguai Original", "para vender"). Perguntado ao usuário se regenera só essa frase.
