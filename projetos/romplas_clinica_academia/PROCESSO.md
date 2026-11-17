@@ -28,7 +28,7 @@
 
 ## Provisório (trocar quando chegar)
 - **Inserts do Magnific:** entraram como foto parada (miniatura 720×1280 da página do item) com deriva lenta. Quando os clipes forem baixados em 1080p, trocar `photo('m_*')` por vídeo e re-renderizar.
-- **Produto hospitalar/academia:** cenas 5 e 19 usam a cartela Uruguai Original®; cena 14 a amostra Nautiplas.
+- **Produto hospitalar/academia:** resolvido na v3 com as fotos de produto do site (ver v3).
 - **Trilha:** resolvida na v2 (Radiant Momentum). Para trocar: `video/seq.json` → `music` (`file`, `ss`, `lufs`) e `./vse.sh seqaudio <video/>` (não re-renderiza imagem).
 
 ## Erros corrigidos
@@ -42,3 +42,11 @@
 - Fundo vivo com o texto parado: deriva das fotos 1,00 → 1,08; metades da tela dividida deslizando em sentidos opostos.
 - Trilha: "Radiant Momentum" (Magnific, Google Lyria 3 Pro, a mesma do vídeo do Uruguai Original), 53,5 s, ss 0, −27 LUFS sob a voz com ducking, final natural da faixa (sem fade longo).
 - Entrega: `entrega/Romplas_Lojista_ClinicaAcademia_v2.mp4` · 53,5 s · −14,0 LUFS · true peak −2,5 dBTP.
+
+## v3 (ajustes pedidos na v2)
+- Cena 18 (fachada): foto grande (faixa de 1150 px, sem ampliar a original de 2560 px), enquadrada na placa ROMPLAS; "Quem fabrica é a" + logo numa faixa azul sobre a foto. Logo com o "O" primeiro começa na entrada da cena e fecha em ~1,0 s (antes saía incompleto).
+- Traços (lettering, text label, ícones em trace) pulavam do nada: o GSAP arredonda `stroke-dashoffset` em px e o traço estava normalizado em 0–1. Agora `pathLength` 1000 no motor (vale para todo traço).
+- Vistoria de fotos (ampliação sobre o tamanho na tela): fachada e equipe OK; sala de saúde e academia aceitáveis (1,2–1,35x); ruins: os 12 quadros de prévia do Magnific (720p, 1,7x), a cartela Uruguai (2,9x) e a amostra Nautiplas (5x).
+- Trocadas por fotos reais de produto do site romplas.com.br (1600–1920 px): cena 5 = mosaico das linhas hospitalar e academia (LXR, Omega New, Dollaro, Bagun, Napa, Casco) em `fotos/p_mosaico.jpg`; cena 14 = LXR azul-claro (hospitalar) `fotos/p_lxr.jpg`; cena 19 = Uruguai Original marinho `fotos/p_uruguai.jpg`.
+- Pendente: os 12 clipes do Magnific em 1080p (baixar pelo site, entra na assinatura; pela API ~600 créditos cada).
+- Entrega: entrega/Romplas_Lojista_ClinicaAcademia_v3.mp4 · 53,5 s · −14,0 LUFS · true peak −2,5 dBTP.

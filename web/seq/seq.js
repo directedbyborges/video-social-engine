@@ -17,7 +17,7 @@
   const SCURVE = CustomEase.create('scurve', 'M0,0 C0.8,0 0.2,1 1,1');
   const Q = window.SEQ;
   const W = 1080, H = 1920, PAN = Q.pan || 220, PD = Q.push || .42;
-  const ENT = .45, BL = 8, ST = .05;   // duração de entrada, desfoque inicial, intervalo entre palavras
+  const ENT = .45, BL = 8, ST = .05, PL = 1000;   // duração de entrada, desfoque inicial, intervalo entre palavras
   const TR = { zin: { s: 1.2 }, zout: { s: 0.82 }, panR: { x: -PAN }, panL: { x: PAN }, panU: { y: -PAN }, panD: { y: PAN } };
   const PUSH = { pushL: { x: -W }, pushR: { x: W }, pushU: { y: -H }, pushD: { y: H } };
   const tl = gsap.timeline({ paused: true });
@@ -72,8 +72,8 @@
   }
   function A_trace(el, t) {
     const paths = [...el.querySelectorAll('path')];
-    paths.forEach(p => { const col = p.getAttribute('fill'); p.setAttribute('pathLength', 1); p.style.stroke = col; p.style.strokeWidth = el.dataset.sw || 1.1; p.style.strokeDasharray = 1; });
-    tl.fromTo(paths, { strokeDashoffset: 1, fillOpacity: 0, strokeOpacity: 1 }, { strokeDashoffset: 0, duration: .5, ease: SCURVE }, t);
+    paths.forEach(p => { const col = p.getAttribute('fill'); p.setAttribute('pathLength', PL); p.style.stroke = col; p.style.strokeWidth = el.dataset.sw || 1.1; p.style.strokeDasharray = PL; });
+    tl.fromTo(paths, { strokeDashoffset: PL, fillOpacity: 0, strokeOpacity: 1 }, { strokeDashoffset: 0, duration: .5, ease: SCURVE }, t);
     tl.to(paths, { fillOpacity: 1, duration: .2, ease: 'none' }, t + .35);
     tl.to(paths, { strokeOpacity: 0, duration: .2, ease: 'none' }, t + .45);
     tl.fromTo(el, { opacity: 0, scale: .9 }, { opacity: 1, scale: 1, duration: .35, ease: SNAP }, t);
@@ -88,13 +88,14 @@
     const o = paths[0], rest = paths.slice(1), vb = svg.viewBox.baseVal, bb = o.getBBox();
     const dx = (vb.x + vb.width / 2) - (bb.x + bb.width / 2);
     tl.fromTo(o, { x: dx, scale: .2, rotation: -120, opacity: 0, transformOrigin: '50% 50%' },
-      { scale: 1.5, rotation: 0, opacity: 1, duration: .45, ease: SNAP }, t);
-    tl.to(o, { x: 0, scale: 1, duration: .4, ease: SCURVE }, t + .45);
-    tl.fromTo(rest, { y: 24, opacity: 0, transformOrigin: '50% 50%' }, { y: 0, opacity: 1, duration: .4, ease: SNAP, stagger: .035 }, t + .62);
+      { scale: 1.5, rotation: 0, opacity: 1, duration: .38, ease: SNAP }, t);
+    tl.to(o, { x: 0, scale: 1, duration: .34, ease: SCURVE }, t + .36);
+    tl.fromTo(rest, { y: 24, opacity: 0, transformOrigin: '50% 50%' }, { y: 0, opacity: 1, duration: .32, ease: SNAP, stagger: .03 }, t + .5);   // completo em ~1,0 s
   }
-  function A_draw(path, t, d = .5) {
-    path.setAttribute('pathLength', 1); path.style.strokeDasharray = 1;
-    tl.fromTo(path, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: SCURVE }, t);
+  // traço desenhado: comprimento normalizado em PL (o GSAP arredonda px para inteiro; com 0–1 o traço pulava)
+  function A_draw(path, t, d = .55) {
+    path.setAttribute('pathLength', PL); path.style.strokeDasharray = PL;
+    tl.fromTo(path, { strokeDashoffset: PL }, { strokeDashoffset: 0, duration: d, ease: SCURVE }, t);
   }
   function A_lett(el, t) {
     const w = splitWords(el);

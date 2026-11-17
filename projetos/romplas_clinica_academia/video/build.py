@@ -101,7 +101,7 @@ at_scene(3)
 sc(halves('m_hospital', 'd_academia', '50% 50%', '72% 68%'),
    center(f'<div class="row" style="gap:28px">{chip("*hospital*", "chipL", wt(6.00))}{chip("*academia*", "chipR", wt(6.853))}</div>', top=900, h=120), None)
 at_scene(4)
-sc(photo('s_uruguai', '50% 40%'), center(box([('o revestimento', 66, 400, ''), ('*certo.*', 160, 400, 'line-height:.95')]), top=760, h=420), 'out')
+sc(photo('p_mosaico'), center(box([('o revestimento', 66, 400, ''), ('*certo.*', 160, 400, 'line-height:.95')]), top=760, h=420), 'out')
 at_scene(5)
 sc(arcos(), center(lett('essa venda', '*é sua.*', EARLY, size=(96, 170), sfx='big')), 'in')
 at_scene(6)
@@ -123,7 +123,7 @@ sc(arcos(), center(icon('cruz-hospitalar', W, 230, EARLY, sfx='brand') + lett('A
 at_scene(12)
 sc(photo('m_limpar', '50% 55%', .08), center(box([('fácil de limpar', 72, 400, ''), ('e *desinfetar.*', 116, 400, '')]), top=1000, h=320), 'out')
 at_scene(13)
-sc(photo('s_nautiplas', '45% 50%'), center(f'<div class="chips">{chip("resistente a *mancha*", "chipL", EARLY)}{chip("*antiderrapante*", "chipR", wt(24.88))}</div>', top=1040, h=280), 'in')
+sc(photo('p_lxr'), center(f'<div class="chips">{chip("resistente a *mancha*", "chipL", EARLY)}{chip("*antiderrapante*", "chipR", wt(24.88))}</div>', top=1040, h=280), 'in')
 at_scene(14)
 sc(photo('m_academia', '50% 50%', .15), center(icon('halter', W, 200, EARLY) + box([('e linha para', 60, 400, ''), ('*academia.*', 136, 400, '')], t=EARLY + .05), top=820, h=560, gap=24), 'out')
 at_scene(15)
@@ -131,10 +131,12 @@ sc(photo('m_parceria', '50% 50%', .12), center(box([('você vende', 62, 400, '')
 at_scene(16)
 sc(arcos(light=True), center(f'<div class="rotulo" data-a="rotulo" data-t="{EARLY}" style="color:{AZ};font-size:84px;text-align:center">sem precisar buscar<br><b>cliente novo.</b><svg class="rt"></svg></div>'), 'out')
 at_scene(17)
-sc(fill(AZ) + band('d_fachada', '62% 50%', 560, 620),
-   center(f'<div class="over" data-a="up" data-t="{EARLY}" style="color:#fff">Quem fabrica é a</div>' + A(logo_svg(False, 640), 'logoO', round(wt(32.64) - .3, 3), sfx='brand'), top=1220, h=300, gap=26), 'in')
+sc(fill(AZ) + band('d_fachada', '86% 50%', 300, 1150),   # foto grande (1150 px de altura, sem ampliar a original)
+   center(f'<div style="background:{AZ};padding:34px 64px 42px;display:flex;flex-direction:column;align-items:center;gap:22px">'
+          f'<div class="over" data-a="up" data-t="{EARLY}" style="color:#fff">Quem fabrica é a</div>' + A(logo_svg(False, 600), 'logoO', round(EARLY + .1, 3), sfx='brand') + '</div>',
+          top=1020, h=340), 'in')
 at_scene(18)
-sc(photo('s_uruguai', '50% 50%'), center(box([('a mesma indústria do', 58, 400, ''), ('*Uruguai*', 132, 400, 'line-height:.95'), ('*Original®*', 132, 400, 'line-height:.95')]), top=760, h=440), 'out')
+sc(photo('p_uruguai'), center(box([('a mesma indústria do', 58, 400, ''), ('*Uruguai*', 132, 400, 'line-height:.95'), ('*Original®*', 132, 400, 'line-height:.95')]), top=760, h=440), 'out')
 at_scene(19)   # onze mercados
 grid = ''.join(F.icon(n, AZ, 150) for n in ['cruz-hospitalar', 'halter', 'sofa', 'poltrona', 'carro', 'barco', 'presente', 'monitor', 'caixa', 'bolsa', 'escudo'])
 sc(arcos(light=True), center(f'<div style="display:flex;align-items:baseline;gap:24px;color:{AZ}"><span class="big" data-a="count" data-n="11" data-d=".45" data-t="{wt(35.92)}" data-sfx="big" style="font-size:220px">11</span>'
