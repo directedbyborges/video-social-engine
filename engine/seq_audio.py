@@ -43,14 +43,21 @@ M = S.get("music")
 if M:
     ins += ["-ss", str(M.get("ss", 0)), "-i", M["file"]]
     mi = n
-    lvl = M.get("gain_db", -18)
-    parts.append(f"[{mi}:a]aresample=48000,volume={lvl}dB,atrim=0:{END:.3f},afade=t=in:d=.4,afade=t=out:st={END - 1.6:.3f}:d=1.6[mraw]")
+    if "lufs" in M:   # nível por loudness: mede o trecho usado da faixa e leva ao alvo (−27 presente, −30 padrão, −33 discreta)
+        lo = subprocess.run(["ffmpeg", "-ss", str(M.get("ss", 0)), "-t", f"{END:.3f}", "-i", M["file"], "-af", "ebur128", "-f", "null", "-"], capture_output=True, text=True).stderr
+        lvl = round(M["lufs"] - float(re.findall(r"I:\s+(-?[\d.]+) LUFS", lo)[-1]), 1)
+    else:
+        lvl = M.get("gain_db", -18)
+    fo = f",afade=t=out:st={END - 1.6:.3f}:d=1.6" if M.get("fade_out", True) else f",afade=t=out:st={END - .25:.3f}:d=0.25"
+    parts.append(f"[{mi}:a]aresample=48000,volume={lvl}dB,atrim=0:{END:.3f},afade=t=in:d=0.15{fo}[mraw]")
+    print(f"trilha: ss {M.get('ss', 0)} s · ganho {lvl} dB")
     parts.append("[voice]asplit=2[voice1][vsc]") ; mix[0] = "[voice1]"
     parts.append("[mraw][vsc]sidechaincompress=threshold=0.03:ratio=6:attack=20:release=400:makeup=1[mus]")
     mix.append("[mus]")
 parts.append("".join(mix) + f"amix=inputs={len(mix)}:normalize=0:dropout_transition=0,atrim=0:{END:.3f}[pre]")
 pre = P + "/_premix.wav"
-subprocess.run(["ffmpeg", "-v", "error", "-y", *ins, "-filter_complex", ";".join(parts), "-map", "[pre]", "-ar", "48000", "-ac", "2", pre], check=True)
+r0 = subprocess.run(["ffmpeg", "-v", "error", "-y", *ins, "-filter_complex", ";".join(parts), "-map", "[pre]", "-ar", "48000", "-ac", "2", pre], capture_output=True, text=True)
+if r0.returncode: sys.exit("ffmpeg (premix): " + "\n".join(l for l in r0.stderr.splitlines() if "filter_complex" not in l)[-1500:])
 
 # master: compressão leve + loudnorm em 2 passadas + limitador em -2 dBTP
 chain = "acompressor=threshold=-22dB:ratio=3.5:attack=6:release=90:makeup=1"
