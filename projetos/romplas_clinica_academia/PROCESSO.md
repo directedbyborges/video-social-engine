@@ -27,7 +27,7 @@
 - Transcrição do vídeo final conferida: todas as frases presentes, nenhuma tag lida.
 
 ## Provisório (trocar quando chegar)
-- **Inserts do Magnific:** entraram como foto parada (miniatura 720×1280 da página do item) com deriva lenta. Quando os clipes forem baixados em 1080p, trocar `photo('m_*')` por vídeo e re-renderizar.
+- **Inserts do Magnific:** resolvido na v5 (clipes enviados pelo usuário, 720p).
 - **Produto hospitalar/academia:** resolvido na v3 com as fotos de produto do site (ver v3).
 - **Trilha:** resolvida na v2 (Radiant Momentum). Para trocar: `video/seq.json` → `music` (`file`, `ss`, `lufs`) e `./vse.sh seqaudio <video/>` (não re-renderiza imagem).
 
@@ -56,3 +56,10 @@
 - Cena 16 "você vende mais para o mesmo tapeceiro": era o 7947589 (aperto de mão numa floricultura). Agora 10087784, pagamento no caixa de uma loja de tecidos com mostruários (real, premium): https://www.magnific.com/premium-video/customer-making-contactless-payment-with-smartphone-fabric-store_10087784 ; box 3D subiu para a parte de cima da tela.
 - Alternativas vistas: 7642524 (mercado de tecidos), 6969597 (senhora em loja de tecidos), 8966381 (alfaiate cortando tecido), 9570027 (vendedor desenrolando rolo na banca).
 - Entrega: entrega/Romplas_Lojista_ClinicaAcademia_v4.mp4 · 53,5 s · −14,0 LUFS · true peak −2,5 dBTP.
+
+## v5 (clipes do Magnific enviados pelo usuário em 3 levas)
+- 12 clipes em 720×1280 (o usuário baixou em 720p) em `magnific_videos/`; trecho usado de cada um cortado em `clips/<chave>.mp4` (3,4 s, H.264 só com quadros-chave, para busca exata).
+- Trechos: abertura 1,6 s (fita no assento) · artesão 3,2 s (depois que a moça sai) · hospital 2,0 · corte 6,0 · maca 1,0 · cadeiras 1,0 · banco de aparelho 0,0 (antes da toalha) · outra loja 0,5 (antes da moça entrar) · desinfetar 5,0 (spray no banco) · academia 9,0 (bancos vermelhos no centro) · pagamento 5,6 (celular na maquininha) · consultor 1,0.
+- Motor: `<video class="clip">` no fundo das cenas; `window.seek` assíncrono posiciona cada clipe visível no quadro certo e só resolve com o quadro decodificado. `media()` no build usa o clipe se existir, senão a foto.
+- Conferido: os 12 trechos em movimento (nenhum quadro parado), sem quadro preto.
+- Entrega: entrega/Romplas_Lojista_ClinicaAcademia_v5.mp4 · 53,5 s · −14,0 LUFS · true peak −2,5 dBTP.

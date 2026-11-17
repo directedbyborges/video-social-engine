@@ -151,6 +151,7 @@
 
   // ---------- cenas ----------
   const N = Q.scenes.length;
+  const VIDS = [];   // clipes de vídeo: posicionados quadro a quadro no seek
   Q.scenes.forEach((sc, i) => {
     const el = document.getElementById(sc.id), cam = el.querySelector('.cam'), sw = el.querySelector('.sw');
     const pin = PUSH[sc.tin], pout = PUSH[sc.tout];
@@ -179,9 +180,10 @@
     if (sc.zoom === 'in') { tl.set(sw, { scale: .87 }, 0); tl.to(sw, { scale: 1, duration: .6, ease: 'power2.inOut' }, c - .3); }
     else if (sc.zoom === 'out') { tl.set(sw, { scale: 1 }, 0); tl.to(sw, { scale: .88, duration: .6, ease: 'power2.inOut' }, c - .3); }
     // fundo vivo enquanto o texto fica parado: deriva lenta (escala) nas fotos; metades da tela dividida em sentidos opostos
-    el.querySelectorAll('.bg img.drift').forEach(im => tl.fromTo(im, { scale: 1 }, { scale: +(im.dataset.drift || 1.08), duration: v1 - v0, ease: 'none' }, v0));
-    el.querySelectorAll('.bg .half img').forEach((im, k) => tl.fromTo(im, { scale: 1.08, x: k ? -40 : 40 }, { scale: 1.12, x: k ? 40 : -40, duration: v1 - v0, ease: 'none' }, v0));
+    el.querySelectorAll('.bg .drift').forEach(im => tl.fromTo(im, { scale: 1 }, { scale: +(im.dataset.drift || 1.08), duration: v1 - v0, ease: 'none' }, v0));
+    el.querySelectorAll('.bg .half img, .bg .half video').forEach((im, k) => tl.fromTo(im, { scale: 1.08, x: k ? -40 : 40 }, { scale: 1.12, x: k ? 40 : -40, duration: v1 - v0, ease: 'none' }, v0));
     el.querySelectorAll('.arcs').forEach(a => A_arcs(a, v0, v1));
+    el.querySelectorAll('video.clip').forEach(v => VIDS.push({ v, v0, v1, rate: +(v.dataset.rate || 1), ss: +(v.dataset.ss || 0) }));
     el.querySelectorAll('[data-a]').forEach(e => {
       const t = at(e, sc), a = e.dataset.a;
       ({ up: () => A_up(e, t), lines: () => A_lines(e, t), words: () => A_words(e, t), scale: () => A_scale(e, t), pop: () => A_pop(e, t),
@@ -206,8 +208,19 @@
     sfx('build', T);
   }
   tl.set({}, {}, Q.end);
-  window.seek = t => { tl.seek(Math.min(t, Q.end), false); };
+  // seek assíncrono: posiciona a timeline e cada clipe visível; resolve quando o quadro do vídeo está decodificado
+  const frameReady = v => new Promise(r => { let done = false; const fin = () => { if (!done) { done = true; r(); } };
+    if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(fin); requestAnimationFrame(() => requestAnimationFrame(fin)); setTimeout(fin, 250); });
+  function seekVideo(c, t) {
+    const v = c.v, dur = v.duration || 0;
+    const target = Math.max(0, Math.min(dur - .04, c.ss + (t - c.v0) * c.rate));
+    if (Math.abs(v.currentTime - target) < 1e-4) return Promise.resolve();
+    return new Promise(r => { v.addEventListener('seeked', () => frameReady(v).then(r), { once: true }); v.currentTime = target; });
+  }
+  window.seek = t => {
+    t = Math.min(t, Q.end); tl.seek(t, false);
+    return Promise.all(VIDS.filter(c => t >= c.v0 - .05 && t <= c.v1 + .05).map(c => seekVideo(c, t))).then(() => undefined);
+  };
   window.SEQ_TL = tl;
-  window.seek(0);
-  window.SEQ_READY = true;
+  window.seek(0).then(() => { window.SEQ_READY = true; });
 })();

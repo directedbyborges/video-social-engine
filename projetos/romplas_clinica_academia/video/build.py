@@ -33,9 +33,17 @@ def A(html, a, t=None, **kw):
 
 def md(t): return re.sub(r'\*([^*]+)\*', r'<b>\1</b>', t)
 
+CLIPS = os.path.join(ROOT, 'clips')
+def media(name, pos, cls=''):
+    """Clipe do Magnific (clips/<nome>.mp4, trecho já cortado) se existir; senão a foto (fotos/<nome>.jpg)."""
+    v = os.path.join(CLIPS, name + '.mp4')
+    if os.path.exists(v):
+        return f'<video class="clip {cls}" src="file://{v}" muted preload="auto" playsinline style="object-position:{pos}"></video>'
+    return f'<img class="{cls}" src="file://{FOTOS}/{name}.jpg" style="object-position:{pos}">'
+
 def photo(name, pos='50% 50%', dim=0.0):
     d = f'<div class="dim" style="opacity:{dim}"></div>' if dim else ''
-    return f'<div class="ph"><img class="drift" src="file://{FOTOS}/{name}.jpg" style="object-position:{pos}"></div>{d}'
+    return f'<div class="ph">{media(name, pos, "drift")}</div>{d}'
 
 def fill(c): return f'<div class="fill" style="background:{c}"></div>'
 
@@ -45,8 +53,8 @@ def arcos(light=False):
     return fill('#fff' if light else AZ) + f'<div class="arcbox">{s}</div>'
 
 def halves(a, b, pa='50% 50%', pb='50% 50%'):
-    return (f'<div class="half top" data-a="halfTop" data-t="{EARLY}"><img src="file://{FOTOS}/{a}.jpg" style="object-position:{pa}"></div>'
-            f'<div class="half bot" data-a="halfBot" data-t="{EARLY}"><img src="file://{FOTOS}/{b}.jpg" style="object-position:{pb}"></div><div class="divline"></div>')
+    return (f'<div class="half top" data-a="halfTop" data-t="{EARLY}">{media(a, pa)}</div>'
+            f'<div class="half bot" data-a="halfBot" data-t="{EARLY}">{media(b, pb)}</div><div class="divline"></div>')
 
 BGI = 38.4   # sangria vertical do .bg (2% de 1920)
 def band(name, pos='50% 50%', top=560, h=640):
@@ -172,11 +180,11 @@ body{{margin:0;background:#000}}
 .cam{{position:absolute;inset:0;overflow:hidden;transform-origin:50% 50%}}
 .sw{{position:absolute;inset:0;transform-origin:50% 50%}}
 .bg{{position:absolute;inset:-2%;overflow:hidden}}
-.bg .ph{{position:absolute;inset:0}} .bg .ph img{{width:100%;height:100%;object-fit:cover;display:block}}
+.bg .ph{{position:absolute;inset:0}} .bg .ph img,.bg .ph video{{width:100%;height:100%;object-fit:cover;display:block}}
 .bg .fill,.bg .dim{{position:absolute;inset:0}} .bg .dim{{background:#0B1422}}
 .bg .arcbox{{position:absolute;inset:0}} .bg .arcbox svg{{position:absolute;inset:0}}
 .bg .half{{position:absolute;left:0;right:0;height:50%;overflow:hidden}} .bg .half.top{{top:0}} .bg .half.bot{{top:50%}}
-.bg .half img{{width:100%;height:100%;object-fit:cover}}
+.bg .half img,.bg .half video{{width:100%;height:100%;object-fit:cover;display:block}}
 .bg .divline{{position:absolute;left:0;right:0;top:calc(50% - 4px);height:8px;background:{AZ}}}
 .bg .band{{position:absolute;left:0;right:0;overflow:hidden}} .bg .band img{{width:100%;height:100%;object-fit:cover}}
 .w{{display:inline-block}}
@@ -233,7 +241,7 @@ html = f"""<!doctype html><html><head><meta charset="utf-8"><style>{CSS}</style>
 <script src="file://{ENGINE}/web/seq/vendor/CustomEase.min.js"></script>
 <script>{JS}</script>
 <script>
-Promise.all([document.fonts.ready, ...[...document.images].map(im => im.decode().catch(()=>0))]).then(() => setTimeout(() => {{
+Promise.all([document.fonts.ready, ...[...document.images].map(im => im.decode().catch(()=>0)), ...[...document.querySelectorAll('video')].map(v => v.readyState >= 2 ? 0 : new Promise(r => {{ v.addEventListener('loadeddata', r, {{once:true}}); v.addEventListener('error', r, {{once:true}}); }}))]).then(() => setTimeout(() => {{
   const s = document.createElement('script'); s.src = 'file://{ENGINE}/web/seq/seq.js'; document.body.appendChild(s);
 }}, 150));
 </script></body></html>"""
