@@ -54,7 +54,7 @@ def arcos(light=False):
 
 def halves(a, b, pa='50% 50%', pb='50% 50%'):
     return (f'<div class="half top" data-a="halfTop" data-t="{EARLY}">{media(a, pa)}</div>'
-            f'<div class="half bot" data-a="halfBot" data-t="{EARLY}">{media(b, pb)}</div><div class="divline"></div>')
+            f'<div class="half bot" data-a="halfBot" data-t="{EARLY}">{media(b, pb)}</div>')
 
 BGI = 38.4   # sangria vertical do .bg (2% de 1920)
 def band(name, pos='50% 50%', top=560, h=640):
@@ -139,10 +139,10 @@ sc(photo('m_venda', '50% 50%', .1), center(box([('você vende', 62, 400, ''), ('
 at_scene(16)
 sc(arcos(light=True), center(f'<div class="rotulo" data-a="rotulo" data-t="{EARLY}" style="color:{AZ};font-size:84px;text-align:center">sem precisar buscar<br><b>cliente novo.</b><svg class="rt"></svg></div>'), 'out')
 at_scene(17)
-sc(fill(AZ) + band('d_fachada', '86% 50%', 300, 1150),   # foto grande (1150 px de altura, sem ampliar a original)
+sc(photo('d_fachada_v', '50% 50%', .05),   # fachada em tela cheia: recorte vertical na placa (fotos/d_fachada_v.jpg)
    center(f'<div style="background:{AZ};padding:34px 64px 42px;display:flex;flex-direction:column;align-items:center;gap:22px">'
           f'<div class="over" data-a="up" data-t="{EARLY}" style="color:#fff">Quem fabrica é a</div>' + A(logo_svg(False, 600), 'logoO', round(EARLY + .1, 3), sfx='brand') + '</div>',
-          top=1020, h=340), 'in')
+          top=1000, h=340), 'in')
 at_scene(18)
 sc(photo('p_uruguai'), center(box([('a mesma indústria do', 58, 400, ''), ('*Uruguai*', 132, 400, 'line-height:.95'), ('*Original®*', 132, 400, 'line-height:.95')]), top=760, h=440), 'out')
 at_scene(19)   # onze mercados
@@ -157,9 +157,12 @@ sc(fill(CCL), center(cta('Saiba mais', round(o(40.32) - CUTS[21], 3))), None)
 at_scene(22)
 sc(arcos(), center('<div class="form" data-a="form" data-t="-0.12" data-first=".3" data-step=".22"><h4>Cadastro da sua loja</h4><div class="field">Nome da loja<span class="ok">✓</span></div><div class="field">Cidade<span class="ok">✓</span></div><div class="field">WhatsApp<span class="ok">✓</span></div></div>'), 'in')
 at_scene(23)
-sc(fill(AZ) + band('d_pessoas', '50% 35%', 560, 660), center(f'<div data-a="words" data-t="{EARLY}" style="color:#fff;font-size:74px;letter-spacing:-.02em">um <b>especialista</b> Romplas</div>', top=1250, h=120), 'out')
+sc(photo('m_especialista', '50% 40%', .1), center(box([('um *especialista*', 104, 400, ''), ('da Romplas', 60, 400, 'margin-top:6px')]), top=1000, h=320), 'out')
 at_scene(24)
-sc(photo('m_especialista', '50% 40%', .1), center(box([('entra em', 64, 400, ''), ('*contato.*', 150, 400, '')]), top=1000, h=320), 'in')
+callcard = (f'<div class="callcard" data-a="up" data-t="{round(EARLY + .12, 3)}"><div class="av"><div class="pr" data-a="pulse" data-t="0.3"></div>'
+            f'<div class="pr" data-a="pulse" data-t="0.7"></div>{F.simbolo("#fff", 96)}</div>'
+            f'<div class="ct2"><b>Especialista Romplas</b><span>para a sua loja</span></div></div>')
+sc(arcos(), center(lett('entra em', '*contato.*', EARLY, size=(84, 150)) + callcard, gap=64), 'in')
 at_scene(25)   # as linhas
 sc(arcos(), center(f'<div class="over" data-a="up" data-t="{EARLY}" style="color:#fff">as linhas</div>'
    f'<div class="row" style="gap:120px"><div class="col">{icon("cruz-hospitalar", W, 300, round(wt(46.24) - .1, 3))}<div class="lbl" data-a="up" data-t="{wt(46.24)}" style="color:#fff">hospitalar</div></div>'
@@ -193,6 +196,11 @@ body{{margin:0;background:#000}}
 .lett{{align-items:center !important;text-align:center !important}}
 .ctabtn{{overflow:visible}}
 .shine{{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}}
+.callcard{{background:#fff;display:flex;align-items:center;gap:36px;padding:36px 52px;width:840px;text-align:left}}
+.callcard .av{{position:relative;flex:none;width:150px;height:150px;border-radius:50%;background:{AZ};display:grid;place-items:center}}
+.callcard .pr{{position:absolute;inset:0;border-radius:50%;border:6px solid {AZA};opacity:0}}
+.callcard .ct2 b{{display:block;font-size:54px;font-weight:700;color:{AZ};letter-spacing:-.02em}}
+.callcard .ct2 span{{display:block;font-size:42px;color:{AZL};letter-spacing:-.01em;margin-top:6px}}
 .ring{{position:absolute;right:8px;bottom:-40px;width:120px;height:120px;border-radius:50%;border:6px solid {AZA};opacity:0}}
 #mask{{position:absolute;inset:0;overflow:hidden;visibility:hidden;z-index:50}}
 #mask .disc{{position:absolute;width:3000px;height:3000px;left:{540 - 1500}px;top:{960 - 1500}px;border-radius:50%}}

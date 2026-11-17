@@ -63,3 +63,11 @@
 - Motor: `<video class="clip">` no fundo das cenas; `window.seek` assíncrono posiciona cada clipe visível no quadro certo e só resolve com o quadro decodificado. `media()` no build usa o clipe se existir, senão a foto.
 - Conferido: os 12 trechos em movimento (nenhum quadro parado), sem quadro preto.
 - Entrega: entrega/Romplas_Lojista_ClinicaAcademia_v5.mp4 · 53,5 s · −14,0 LUFS · true peak −2,5 dBTP.
+
+## v6 (pedido: nenhuma foto ou vídeo com bordas azuis)
+- REGRA DO CLIENTE (vale para os próximos vídeos): nenhuma foto ou vídeo emoldurado em faixa azul ("demonstra amadorismo"). Foto/vídeo sempre em tela cheia; texto em faixa azul por cima é ok.
+- Cena 18 (fachada): tela cheia com recorte vertical na placa ROMPLAS (`fotos/d_fachada_v.jpg`, 880 px da original ampliados 1,69x com Lanczos + nitidez leve; conferido 1:1, legível); "Quem fabrica é a" + logo numa faixa sobre a foto.
+- Cena 24 (especialista): saiu a foto da equipe recortada (o usuário não gostou). Agora o clipe do consultor em tela cheia + "um especialista / da Romplas".
+- Cena 25 (entra em contato): tela de motion: lettering "entra em contato." + cartão de chamada (símbolo da Romplas no avatar com anel pulsando, "Especialista Romplas / para a sua loja"). Motor: animação `pulse`.
+- Telas divididas (cenas 4 e 8): sem a linha azul entre as metades.
+- Entrega: entrega/Romplas_Lojista_ClinicaAcademia_v6.mp4 · 53,5 s · −14,0 LUFS · true peak −2,5 dBTP · sem quadro preto.

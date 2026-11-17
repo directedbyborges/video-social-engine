@@ -124,6 +124,11 @@
     tl.fromTo([...el.children], { scale: .65, opacity: 0, filter: blur(8), y: 18 }, { scale: 1, opacity: 1, filter: blur(0), y: 0, duration: .4, ease: SNAP, stagger: { each: .03 } }, t);
   }
   function A_half(el, t, dir) { tl.fromTo(el, { y: dir * 420, filter: blur(8) }, { y: 0, filter: blur(0), duration: .5, ease: SNAP }, t); }
+  // anel pulsando (chamada): repete até o fim da cena
+  function A_pulse(el, t, end) {
+    const n = Math.max(1, Math.floor((end - t) / .8));
+    tl.fromTo(el, { scale: 1, opacity: .7 }, { scale: 1.9, opacity: 0, duration: .8, ease: 'power1.out', repeat: n - 1 }, t);
+  }
   function A_slideout(el, t) { tl.to([...el.children], { x: 700, opacity: 0, duration: .45, ease: ACCEL, stagger: .05 }, t); }
   function A_cta(el, t, sc) {
     const btn = el.querySelector('.ctabtn'), cur = el.querySelector('.cursor'), sub = el.querySelector('.ctasub');
@@ -190,7 +195,7 @@
         box: () => A_box(e, t), box3d: () => A_box3d(e, t, v1), trace: () => A_trace(e, t), pieces: () => A_pieces(e, t), logoO: () => A_logoO(e, t),
         lett: () => A_lett(e, t), rotulo: () => A_rotulo(e, t), chipL: () => A_chip(e, t, -1), chipR: () => A_chip(e, t, 1),
         count: () => A_count(e, t), grid: () => A_grid(e, t), halfTop: () => A_half(e, t, -1), halfBot: () => A_half(e, t, 1),
-        cta: () => A_cta(e, t, sc), form: () => A_form(e, t) }[a] || (() => console.warn('anim?', a)))();
+        cta: () => A_cta(e, t, sc), form: () => A_form(e, t), pulse: () => A_pulse(e, t, v1) }[a] || (() => console.warn('anim?', a)))();
       if (e.dataset.sfx) sfx(e.dataset.sfx, t + (+e.dataset.sfxoff || 0));
       if (e.dataset.out) A_slideout(e, sc.t0 + +e.dataset.out);
     });
